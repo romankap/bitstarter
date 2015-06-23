@@ -14,7 +14,7 @@
     <link href="http://fonts.googleapis.com/css?family=Ubuntu:300,400,500,700,300italic,400italic,500italic,700italic" rel="stylesheet" type="text/css">
     <link href="http://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,300,400,600,700,800" rel="stylesheet" type="text/css">
     <link href="http://fonts.googleapis.com/css?family=Lato:300italic,400italic,600italic,700italic,300,400,600,700,800" rel="stylesheet" type="text/css">
-    <link rel="stylesheet" type="text/css" href="./public/css/custom.css">
+    <link rel="stylesheet" type="text/css" href="css/custom.css">
       <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
     <meta name="description" content="">
@@ -111,12 +111,12 @@ body {
 </style>
 
 
-<script src="./public/jquery-1.8.3.min.js"></script>
-<script src="./public/build/vis.js"></script>
-<script src="./public/build/util.js"></script>
-<script src="./public/build/convnet.js"></script>
+<script src="jquery-1.8.3.min.js"></script>
+<script src="build/vis.js"></script>
+<script src="build/util.js"></script>
+<script src="build/convnet.js"></script>
 
-<script src="./public/mnist_labels.js"></script>
+<script src="mnist_labels.js"></script>
 
 <script>
 
@@ -240,7 +240,7 @@ var load_data_batch = function(batch_num) {
     if(batch_num < 20) { loaded_train_batches.push(batch_num); }
     console.log('finished loading data batch ' + batch_num);
   };
-  data_img_elt.src = "./public/mnist/mnist_batch_" + batch_num + ".png";
+  data_img_elt.src = "mnist/mnist_batch_" + batch_num + ".png";
 }
 
 // ------------------------

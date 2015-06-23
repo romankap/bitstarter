@@ -1,13 +1,11 @@
 var express = require('express')
 var app = express();
 var http = require('http');
-var path = require('path');
 var fs = require('fs')
 
 
 app.set('port', (process.env.PORT || 8080))
 app.use(express.static(__dirname + '/public'))
-app.use(express.static('/public'))
 
 app.get('/', function(request, response) {
     //fs.readFileSync("index.html");
