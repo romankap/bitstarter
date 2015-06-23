@@ -4,9 +4,10 @@ var http = require('http');
 var path = require('path');
 var fs = require('fs')
 
-/*
+
 app.set('port', (process.env.PORT || 8080))
 app.use(express.static(__dirname + '/public'))
+app.use(express.static('/public'))
 
 app.get('/', function(request, response) {
     //fs.readFileSync("index.html");
@@ -17,7 +18,8 @@ app.get('/', function(request, response) {
 app.listen(app.get('port'), function() {
   console.log("Node app is running at localhost:" + app.get('port'))
 })
-*/
+
+/*
 http.createServer(function (request, response) {
     console.log('request starting...');
 	
@@ -57,3 +59,4 @@ http.createServer(function (request, response) {
 	});	
 }).listen(8080);
 console.log('Server running at http://127.0.0.1:8080/');
+*/
