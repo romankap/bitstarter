@@ -7,7 +7,8 @@
     "start": "node index.js"
   },
   "dependencies": {
-    "express": "https://registry.npmjs.org/express/-/express-4.12.3.tgz"
+    "express": "https://registry.npmjs.org/express/-/express-4.12.3.tgz",
+    "mongoose": "^4.0.6"
   },
   "engines": {
     "node": "0.12.x"
