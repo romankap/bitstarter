@@ -60,8 +60,9 @@ var sample_training_instance = function() {
   var n = b*3000+k;
 
   // load more batches over time
-  if(step_num%5000===0 && step_num>0) {
-    for(var i=0;i<num_batches;i++) {
+    
+  if(step_num%5000===0 && step_num>0) { 
+    for(var i=0;i<num_batches;i++) {    //Should be replaced by: "get batch num from server and load it"
       if(!loaded[i]) {
         // load it
         load_data_batch(i);
