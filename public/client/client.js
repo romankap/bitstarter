@@ -482,3 +482,25 @@ var change_net = function() {
     eval($("#newnet").val());
     reset_all();
 }
+var post_model_to_server = function() {
+    net_in_JSON = JSON.stringify(net.toJSON());
+    var parameters = {model_name: "MNIST", net: net_in_JSON };
+    console.log("Sending net_in_JSON: " + parameters.net);
+    $.post('/store_model_on_server', parameters, function(data) {
+        console.log(data);
+        //var json = JSON.parse(data);
+        //net = new convnetjs.Net();
+        //net.fromJSON(json);
+        //reset_all();
+    });
+}
+var get_model_from_server = function() {
+    var parameters = {model_name: "MNIST" };
+    $.get('/get_model_from_server', parameters, function(data) {
+        console.log(data);
+        //var json = JSON.parse(data);
+        //net = new convnetjs.Net();
+        //net.fromJSON(json);
+        //reset_all();
+    });
+}
