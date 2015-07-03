@@ -292,7 +292,7 @@ var visualize_activations = function(net, elt) {
 }
 
 // loads a training image and trains on it with the network
-var paused = false;
+var paused = true;
 var load_and_step = function() {
     if(paused) return;
 
