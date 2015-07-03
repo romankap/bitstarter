@@ -39,7 +39,7 @@ app.get('/get_model_from_server', function(request, response){
 
 app.post('/store_model_on_server', function(request, response){
     console.log("<store_model_on_server()> model_name: " + request.body.model_name);
-    console.log("<store_model_on_server()> net (in JSON): " + request.body.net);
+    console.log("<store_model_on_server()> net (JSON) size: " + request.body.net.length);
     response.send("POST handled in Node.js server")
 });
 
