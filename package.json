@@ -1,5 +1,5 @@
 {
-  "name": "node-js-sample",
+  "name": "index.js",
   "version": "0.2.0",
   "description": "A sample Node.js app using Express 4",
   "main": "index.js",
@@ -30,5 +30,10 @@
   "contributors": [
     "Zeke Sikelianos <zeke@sikelianos.com> (http://zeke.sikelianos.com)"
   ],
-  "license": "MIT"
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/heroku/node-js-sample/issues"
+  },
+  "homepage": "https://github.com/heroku/node-js-sample",
+  "devDependencies": {}
 }
