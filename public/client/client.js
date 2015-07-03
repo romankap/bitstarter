@@ -108,6 +108,7 @@ var load_data_batch = function(batch_num) {
     // Load the dataset with JS in background
     data_img_elts[batch_num] = new Image();
     var data_img_elt = data_img_elts[batch_num];
+    data_img_elts[batch_num].crossOrigin = 'anonymous';
     data_img_elt.onload = function() {
         var data_canvas = document.createElement('canvas');
         data_canvas.width = data_img_elt.width;
@@ -119,7 +120,7 @@ var load_data_batch = function(batch_num) {
         if(batch_num < 20) { loaded_train_batches.push(batch_num); }
         console.log('finished loading data batch ' + batch_num);
     };
-    data_img_elt.src = "mnist/mnist_batch_" + batch_num + ".png";
+    data_img_elt.src = "https://s3.eu-central-1.amazonaws.com/bitstarter-dl/mnist/mnist_batch_" + batch_num + ".png";
 }
 
 // ------------------------
