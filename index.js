@@ -27,8 +27,24 @@ app.get('/', function(request, response) {
     response.send(index_buffer.toString())
 });
 
-app.get('/test', function(request, response){
-    var index_buffer = new Buffer(fs.readFileSync("test.html"))
+app.get('/test_mnist', function(request, response){
+    var index_buffer = new Buffer(fs.readFileSync("test_mnist.html"))
+    response.send(index_buffer.toString())
+});
+
+
+app.get('/train_mnist', function(request, response){
+    var index_buffer = new Buffer(fs.readFileSync("train_mnist.html"))
+    response.send(index_buffer.toString())
+});
+
+app.get('/train_cifar10', function(request, response){
+    var index_buffer = new Buffer(fs.readFileSync("train_cifar10.html"))
+    response.send(index_buffer.toString())
+});
+
+app.get('/test_cifar10', function(request, response){
+    var index_buffer = new Buffer(fs.readFileSync("test_cifar10.html"))
     response.send(index_buffer.toString())
 });
 
