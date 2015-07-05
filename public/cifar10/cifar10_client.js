@@ -6,13 +6,13 @@ var layer_defs, net, trainer;
 var classes_txt = ['airplane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck'];
 
 var use_validation_data = true;
-var sample_training_instance = function() {
+var sample_training_instance = function () {
 
     // find an unloaded batch
-    var bi = Math.floor(Math.random()*loaded_train_batches.length);
+    var bi = Math.floor(Math.random() * loaded_train_batches.length);
     var b = loaded_train_batches[bi];
-    var k = Math.floor(Math.random()*1000); // sample within the batch
-    var n = b*1000+k;
+    var k = Math.floor(Math.random() * 1000); // sample within the batch
+    var n = b * 1000 + k;
 
     // load more batches over time
     if(step_num%2000===0 && step_num>0) {
@@ -94,6 +94,7 @@ var init_model;
 
 // int main
 $(window).load(function() {
+    //Load the model from server
     var AJAX_init_parameters = {model_name: "CIFAR10" };
     $.get('/get_init_model_from_server', AJAX_init_parameters, function(data) {
         console.log("Received an init_model from server: \n" + data);
@@ -561,7 +562,7 @@ var update_net_param_display = function() {
 var toggle_pause = function() {
     paused = !paused;
     var btn = document.getElementById('buttontp');
-    if(paused) { btn.value = 'resume' }
+    if(paused) { btn.value = 'compute' }
     else { btn.value = 'pause'; }
 }
 var dump_json = function() {
@@ -605,7 +606,7 @@ var load_pretrained = function() {
 }
 
 var change_net = function() {
-    eval($("#newnet").val());
+    eval(init_model);
     reset_all();
 }
 

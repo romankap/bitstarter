@@ -460,7 +460,7 @@ var update_net_param_display = function() {
 var toggle_pause = function() {
     paused = !paused;
     var btn = document.getElementById('buttontp');
-    if(paused) { btn.value = 'resume' }
+    if(paused) { btn.value = 'compute' }
     else { btn.value = 'pause'; }
 }
 var dump_json = function() {
