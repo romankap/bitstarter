@@ -1,5 +1,6 @@
 var express = require('express');
 var bodyParser = require('body-parser');
+var compress = require('compression');
 var morgan = require('morgan');
 var http = require('http');
 var fs = require('fs');
@@ -12,6 +13,7 @@ var mnist = require('./app/models/mnist');
 var app = express();
 app.use(bodyParser.json({limit: '10mb'})); // support json encoded bodies
 app.use(bodyParser.urlencoded({ extended: true, limit: '10mb' })); // support encoded bodies
+app.use(compress());
 
 //var user = new db.create_user('Roman', 'Kaplan', "some@one.com");
 //console.log("created user:" + user.firstname);
@@ -22,13 +24,16 @@ app.use(bodyParser.urlencoded({ extended: true, limit: '10mb' })); // support en
 app.set('port', (process.env.PORT || 8080));
 app.use(express.static(__dirname + '/public'));
 
+
+/////// =====================
+
 app.get('/', function(request, response) {
     //fs.readFileSync("index.html");
     var index_buffer = new Buffer(fs.readFileSync("index.html"))
     response.send(index_buffer.toString())
 });
 
-// MNIST
+// ========  MNIST ========
 app.get('/train_mnist', function(request, response){
     var index_buffer = new Buffer(fs.readFileSync("public/mnist/train_mnist.html"))
     response.send(index_buffer.toString())
@@ -39,7 +44,7 @@ app.get('/test_mnist', function(request, response){
     response.send(index_buffer.toString())
 });
 
-// CIFAR10
+// ======== CIFAR10 ========
 app.get('/train_cifar10', function(request, response){
     var index_buffer = new Buffer(fs.readFileSync("public/cifar10/train_cifar10.html"))
     response.send(index_buffer.toString())
@@ -50,13 +55,41 @@ app.get('/test_cifar10', function(request, response){
     response.send(index_buffer.toString())
 });
 
+
+//==========================================
+//=  Store and load models to / from server
+//==========================================
+
 app.get('/get_init_model_from_server', function(request, response){
-    if (request.query.model_name === "CIFAR10")
+    if (request.query.model_name === "CIFAR10") {
         response.send(cifar10.init_model)
-    else if (request.query.model_name === "MNIST")
+    }
+    else if (request.query.model_name === "MNIST") {
         response.send(mnist.init_model)
-    else
+    }
+    else {
         console.log(" <get_init_model_from_server> Received unknown model request: " + request.query.model_name);
+    }
+});
+
+app.get('/get_net_from_server', function(request, response){
+    if (request.query.model_name === "CIFAR10") {
+        parameters = {net : JSON.stringify(cifar10.net_manager.get_weights())};
+        response.send(parameters);
+    }
+    else if (request.query.model_name === "MNIST") {
+        parameters = {net : JSON.stringify(mnist.net_manager.get_weights())};
+        response.send(parameters);
+    }
+    else {
+        console.log(" <get_init_model_from_server> Received unknown model request: " + request.query.model_name);
+    }
+});
+
+app.get('/get_batch_num_from_server', function(request, response) {
+    var batch_num = cifar10.net_manager.get_batch_num();
+    parameters = { batch_num: batch_num};
+    response.send(parameters);
 });
 
 app.get('/test_model_from_server', function(request, response){
@@ -64,14 +97,34 @@ app.get('/test_model_from_server', function(request, response){
     //Send net.JSON to client + test batch name
 });
 
-app.post('/store_model_on_server', function(request, response){
-    console.log("<store_model_on_server()> model_name: " + request.body.model_name);
+app.post('/store_weights_on_server', function(request, response){
+    //Expecting to receive JSON of the form: {model_name: <model name>, net: <net in JSON>}
+    var model_name = request.body.model_name;
+    console.log("<store_weights_on_server()> model_name: " + model_name);
     console.log("<store_model_on_server()> net (JSON) size: " + request.body.net.length);
 
-    console.log("cifar10 net len: " + cifar10.net.toJSON());
-
-    response.send("POST handled in Node.js server")
+    if (request.body.model_name === "CIFAR10") {
+        cifar10.net_manager.store_weights(request.body.net);
+    }
+    else if (request.body.model_name === "MNIST") {
+        mnist.net_manager.store_weights(request.body.net);
+    }
+    else {
+        var new_model_weights = request.body.net;
+        response.send("Received unknown-model weights on Node.js server");
+        //do something with the weights
+    }
+    response.send("Stored " + model_name + " weights on Node.js server");
 });
+
+// ====== Default case ========
+
+app.get('*', function(request, response) {
+    //fs.readFileSync("index.html");
+    var index_buffer = new Buffer(fs.readFileSync("index.html"))
+    response.send(index_buffer.toString())
+});
+
 
 app.listen(app.get('port'), function() {
   console.log("Node app is running at localhost:" + app.get('port'))

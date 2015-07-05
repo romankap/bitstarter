@@ -2,8 +2,12 @@
  * Created by Roman on 04/07/2015.
  */
 
-//var cnnutil = require('../../public/build/util');
-//var convnet = require('../../public/build/convnet');
+var convnetjs = require('convnetjs');
+var net_manager = require('../net_manager');
+
+var total_batches = 50;
+var cifar10_manager = net_manager(total_batches);
+
 
 var init_model = "layer_defs = [];\n\
 layer_defs.push({type:'input', out_sx:32, out_sy:32, out_depth:3});\n\
@@ -25,4 +29,14 @@ exports.init_model = init_model;
 
 //exports.convnet = convnet.convnetjs;
 
-//eval(init_model);
+eval(init_model);
+cifar10_manager.store_weights(net.toJSON());
+
+exports.net_manager = cifar10_manager;
+
+//console.log("<<< The convnet in JSON >>>");
+//console.log(net.toJSON());
+//console.log(JSON.stringify(net.toJSON()).length);
+
+exports.convnetjs = convnetjs;
+exports.net = net;

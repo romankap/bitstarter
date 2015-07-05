@@ -16,9 +16,13 @@ var sample_training_instance = function () {
 
     // load more batches over time
     if(step_num%2000===0 && step_num>0) {
+        //var i = get_batch_num_from_server();
+        //load_data_batch(i);
         for(var i=0;i<num_batches;i++) {
             if(!loaded[i]) {
                 // load it
+                get_net_from_server();
+                i = get_batch_num_from_server();
                 load_data_batch(i);
                 break; // okay for now
             }
@@ -112,7 +116,7 @@ $(window).load(function() {
 
 var start_fun = function() {
     if(loaded[0] && loaded[test_batch]) {
-        console.log('starting!');
+        console.log('Good to go!');
         setInterval(load_and_step, 0); // lets go!
     }
     else { setTimeout(start_fun, 200); } // keep checking
@@ -531,7 +535,9 @@ var step = function(sample) {
 
     // run prediction on test set
     if((step_num % 100 === 0 && step_num > 0) || step_num===100) {
-        test_predict();
+        //test_predict();
+        // post weigths to server
+        post_net_to_server();
     }
     step_num++;
 }
@@ -559,11 +565,19 @@ var update_net_param_display = function() {
     document.getElementById('batch_size_input').value = trainer.batch_size;
     document.getElementById('decay_input').value = trainer.l2_decay;
 }
-var toggle_pause = function() {
+var compute = function() {
     paused = !paused;
     var btn = document.getElementById('buttontp');
-    if(paused) { btn.value = 'compute' }
-    else { btn.value = 'pause'; }
+    if(paused) {
+        btn.value = 'compute'
+        get_net_from_server();
+        get_batch_num_from_server();
+    }
+    else {
+        btn.value = 'pause';
+    }
+
+
 }
 var dump_json = function() {
     document.getElementById("dumpjson").value = JSON.stringify(this.net.toJSON());
@@ -585,8 +599,7 @@ var reset_all = function() {
     lossGraph = new cnnvis.Graph(); // reinit graph too
     step_num = 0;
 }
-var load_from_json = function() {
-    var jsonString = document.getElementById("dumpjson").value;
+var load_from_json = function(jsonString) {
     var json = JSON.parse(jsonString);
     net = new convnetjs.Net();
     net.fromJSON(json);
@@ -610,16 +623,32 @@ var change_net = function() {
     reset_all();
 }
 
-var post_model_to_server = function() {
+var post_net_to_server = function() {
     net_in_JSON = JSON.stringify(net.toJSON());
     var parameters = {model_name: "CIFAR10", net: net_in_JSON };
-    console.log("Sending CIFAR10 net_in_JSON: " + parameters.net);
-    $.post('/store_model_on_server', parameters, function(data) {
+    console.log("Sending CIFAR10 net_in_JSON with length " + parameters.net.length);
+    $.post('/store_weights_on_server', parameters, function(data) {
         console.log(data);
         //var json = JSON.parse(data);
         //net = new convnetjs.Net();
         //net.fromJSON(json);
         //reset_all();
+    });
+}
+var get_batch_num_from_server = function() {
+    var parameters = {model_name: "CIFAR10" };
+    $.get('/get_batch_num_from_server', parameters, function(data) {
+        console.log("<get_batch_num_from_server> Starting to work on batch_num: " + data.batch_num);
+        return data.batch_num;
+    });
+}
+var get_net_from_server = function() {
+    var parameters = {model_name: "CIFAR10"};
+    $.get('/get_net_from_server', parameters, function(data) {
+        console.log("<get_net_from_server> Received " + parameters.model_name + " net back");
+        console.log("<get_net_from_server> Received " + data.net.length + " net in length back"); //DEBUG
+        net = new convnetjs.Net();
+        net.fromJSON(data.net);
     });
 }
 var get_model_from_server = function() {

@@ -63,7 +63,7 @@
 
     <h1 class="convnet-headline">Training Stats</h1>
     <div class="secpart col-sm-push-1 col-sm-4">
-      <input id="buttontp" type="submit" value="compute" onclick="toggle_pause();" style="width: 100px; height:30px; background-color: #FCC;"/>
+      <input id="buttontp" type="submit" value="compute" onclick="compute();" style="width: 100px; height:30px; background-color: #FCC;"/>
       <div id="trainstats"></div>
 
       <div id="controls">
@@ -78,6 +78,33 @@
 
         Weight decay: <input name="wdi" type="text" maxlength="20" id="decay_input"/>
       </div>
+    </div>
+
+    <div class="secpart hide">
+      <div class="col-sm-4">
+        Loss:<br />
+        <canvas id="lossgraph">
+        </canvas>
+        <br />
+        <input id="buttoncg" type="submit" value="clear graph" onclick="clear_graph();"/>
+      </div>
+    </div>
+    <div style="clear:both;"></div>
+
+    <div class="hide">
+      <textarea id="newnet" style="width:100%; height:200px;"></textarea><br />
+      <input id="buttonnn" type="submit" value="change network" onclick="change_net();" style="width:200px;height:30px;"/>
+    </div>
+
+    <div class="divsec hide">
+      <h1>Network Visualization</h1>
+      <div id="visnet"></div>
+    </div>
+
+    <div class="divsec hide">
+      <h1>Example predictions on Test set</h1>
+      <div id="testset_acc"></div>
+      <div id="testset_vis"></div>
     </div>
 
   </div>
