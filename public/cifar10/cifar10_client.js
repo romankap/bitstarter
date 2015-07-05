@@ -1,22 +1,9 @@
 var layer_defs, net, trainer;
-var t = "layer_defs = [];\n\
-layer_defs.push({type:'input', out_sx:24, out_sy:24, out_depth:1});\n\
-layer_defs.push({type:'conv', sx:5, filters:8, stride:1, pad:2, activation:'relu'});\n\
-layer_defs.push({type:'pool', sx:2, stride:2});\n\
-layer_defs.push({type:'conv', sx:5, filters:16, stride:1, pad:2, activation:'relu'});\n\
-layer_defs.push({type:'pool', sx:3, stride:3});\n\
-layer_defs.push({type:'softmax', num_classes:10});\n\
-\n\
-net = new convnetjs.Net();\n\
-net.makeLayers(layer_defs);\n\
-\n\
-trainer = new convnetjs.SGDTrainer(net, {method:'adadelta', batch_size:20, l2_decay:0.001});\n\
-";
 
 // ------------------------
-// BEGIN MNIST SPECIFIC STUFF
+// BEGIN CIFAR10 SPECIFIC STUFF
 // ------------------------
-classes_txt = ['0','1','2','3','4','5','6','7','8','9'];
+var classes_txt = ['airplane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck'];
 
 var use_validation_data = true;
 var sample_training_instance = function() {
@@ -24,13 +11,12 @@ var sample_training_instance = function() {
     // find an unloaded batch
     var bi = Math.floor(Math.random()*loaded_train_batches.length);
     var b = loaded_train_batches[bi];
-    var k = Math.floor(Math.random()*3000); // sample within the batch
-    var n = b*3000+k;
+    var k = Math.floor(Math.random()*1000); // sample within the batch
+    var n = b*1000+k;
 
     // load more batches over time
-
-    if(step_num%5000===0 && step_num>0) {
-        for(var i=0;i<num_batches;i++) {    //Should be replaced by: "get batch num from server and load it"
+    if(step_num%2000===0 && step_num>0) {
+        for(var i=0;i<num_batches;i++) {
             if(!loaded[i]) {
                 // load it
                 load_data_batch(i);
@@ -41,13 +27,22 @@ var sample_training_instance = function() {
 
     // fetch the appropriate row of the training image and reshape into a Vol
     var p = img_data[b].data;
-    var x = new convnetjs.Vol(28,28,1,0.0);
-    var W = 28*28;
-    for(var i=0;i<W;i++) {
-        var ix = ((W * k) + i) * 4;
-        x.w[i] = p[ix]/255.0;
+    var x = new convnetjs.Vol(32,32,3,0.0);
+    var W = 32*32;
+    var j=0;
+    for(var dc=0;dc<3;dc++) {
+        var i=0;
+        for(var xc=0;xc<32;xc++) {
+            for(var yc=0;yc<32;yc++) {
+                var ix = ((W * k) + i) * 4 + dc;
+                x.set(yc,xc,dc,p[ix]/255.0-0.5);
+                i++;
+            }
+        }
     }
-    x = convnetjs.augment(x, 24);
+    var dx = Math.floor(Math.random()*5-2);
+    var dy = Math.floor(Math.random()*5-2);
+    x = convnetjs.augment(x, 32, dx, dy, Math.random()<0.5); //maybe flip horizontally
 
     var isval = use_validation_data && n%10===0 ? true : false;
     return {x:x, label:labels[n], isval:isval};
@@ -55,49 +50,67 @@ var sample_training_instance = function() {
 
 // sample a random testing instance
 var sample_test_instance = function() {
-    var b = 20;
-    var k = Math.floor(Math.random()*3000);
-    var n = b*3000+k;
+
+    var b = test_batch;
+    var k = Math.floor(Math.random()*1000);
+    var n = b*1000+k;
 
     var p = img_data[b].data;
-    var x = new convnetjs.Vol(28,28,1,0.0);
-    var W = 28*28;
-    for(var i=0;i<W;i++) {
-        var ix = ((W * k) + i) * 4;
-        x.w[i] = p[ix]/255.0;
+    var x = new convnetjs.Vol(32,32,3,0.0);
+    var W = 32*32;
+    var j=0;
+    for(var dc=0;dc<3;dc++) {
+        var i=0;
+        for(var xc=0;xc<32;xc++) {
+            for(var yc=0;yc<32;yc++) {
+                var ix = ((W * k) + i) * 4 + dc;
+                x.set(yc,xc,dc,p[ix]/255.0-0.5);
+                i++;
+            }
+        }
     }
+
+    // distort position and maybe flip
     var xs = [];
-    for(var i=0;i<4;i++) {
-        xs.push(convnetjs.augment(x, 24));
+    //xs.push(x, 32, 0, 0, false); // push an un-augmented copy
+    for(var k=0;k<6;k++) {
+        var dx = Math.floor(Math.random()*5-2);
+        var dy = Math.floor(Math.random()*5-2);
+        xs.push(convnetjs.augment(x, 32, dx, dy, k>2));
     }
+
     // return multiple augmentations, and we will average the network over them
     // to increase performance
     return {x:xs, label:labels[n]};
 }
 
-var num_batches = 21; // 20 training batches, 1 test
+var num_batches = 51; // 50 training batches, 1 test
+var test_batch = 50;
 var data_img_elts = new Array(num_batches);
 var img_data = new Array(num_batches);
 var loaded = new Array(num_batches);
 var loaded_train_batches = [];
+var init_model;
 
 // int main
 $(window).load(function() {
+    var AJAX_init_parameters = {model_name: "CIFAR10" };
+    $.get('/get_init_model_from_server', AJAX_init_parameters, function(data) {
+        console.log("Received an init_model from server: \n" + data);
+        init_model = data;
+        eval(init_model);
+        update_net_param_display();
 
-    $("#newnet").val(t);
-    eval($("#newnet").val());
+        for(var k=0;k<loaded.length;k++) { loaded[k] = false; }
 
-    update_net_param_display();
-
-    for(var k=0;k<loaded.length;k++) { loaded[k] = false; }
-
-    load_data_batch(0); // async load train set batch 0 (6 total train batches)
-    load_data_batch(20); // async load test set (batch 6)
-    start_fun();
+        load_data_batch(0); // async load train set batch 0 (6 total train batches)
+        load_data_batch(test_batch); // async load test set (batch 6)
+        start_fun();
+    });
 });
 
 var start_fun = function() {
-    if(loaded[0] && loaded[20]) {
+    if(loaded[0] && loaded[test_batch]) {
         console.log('starting!');
         setInterval(load_and_step, 0); // lets go!
     }
@@ -117,10 +130,10 @@ var load_data_batch = function(batch_num) {
         data_ctx.drawImage(data_img_elt, 0, 0); // copy it over... bit wasteful :(
         img_data[batch_num] = data_ctx.getImageData(0, 0, data_canvas.width, data_canvas.height);
         loaded[batch_num] = true;
-        if(batch_num < 20) { loaded_train_batches.push(batch_num); }
+        if(batch_num < test_batch) { loaded_train_batches.push(batch_num); }
         console.log('finished loading data batch ' + batch_num);
     };
-    data_img_elt.src = "https://s3.eu-central-1.amazonaws.com/bitstarter-dl/mnist/mnist_batch_" + batch_num + ".png";
+    data_img_elt.src = "https://s3.eu-central-1.amazonaws.com/bitstarter-dl/cifar10/cifar10_batch_" + batch_num + ".png";
 }
 
 // ------------------------
@@ -177,6 +190,46 @@ var draw_activations = function(elt, A, scale, grads) {
     }
 }
 
+var draw_activations_COLOR = function(elt, A, scale, grads) {
+
+    var s = scale || 2; // scale
+    var draw_grads = false;
+    if(typeof(grads) !== 'undefined') draw_grads = grads;
+
+    // get max and min activation to scale the maps automatically
+    var w = draw_grads ? A.dw : A.w;
+    var mm = maxmin(w);
+
+    var canv = document.createElement('canvas');
+    canv.className = 'actmap';
+    var W = A.sx * s;
+    var H = A.sy * s;
+    canv.width = W;
+    canv.height = H;
+    var ctx = canv.getContext('2d');
+    var g = ctx.createImageData(W, H);
+    for(var d=0;d<3;d++) {
+        for(var x=0;x<A.sx;x++) {
+            for(var y=0;y<A.sy;y++) {
+                if(draw_grads) {
+                    var dval = Math.floor((A.get_grad(x,y,d)-mm.minv)/mm.dv*255);
+                } else {
+                    var dval = Math.floor((A.get(x,y,d)-mm.minv)/mm.dv*255);
+                }
+                for(var dx=0;dx<s;dx++) {
+                    for(var dy=0;dy<s;dy++) {
+                        var pp = ((W * (y*s+dy)) + (dx + x*s)) * 4;
+                        g.data[pp + d] = dval;
+                        if(d===0) g.data[pp+3] = 255; // alpha channel
+                    }
+                }
+            }
+        }
+    }
+    ctx.putImageData(g, 0, 0);
+    elt.appendChild(canv);
+}
+
 var visualize_activations = function(net, elt) {
 
     // clear the element
@@ -196,10 +249,44 @@ var visualize_activations = function(net, elt) {
         activations_div.className = 'layer_act';
         var scale = 2;
         if(L.layer_type==='softmax' || L.layer_type==='fc') scale = 10; // for softmax
-        draw_activations(activations_div, L.out_act, scale);
+
+        // HACK to draw in color in input layer
+        if(i===0) {
+            draw_activations_COLOR(activations_div, L.out_act, scale);
+            draw_activations_COLOR(activations_div, L.out_act, scale, true);
+
+            /*
+             // visualize positive and negative components of the gradient separately
+             var dd = L.out_act.clone();
+             var ni = L.out_act.w.length;
+             for(var q=0;q<ni;q++) { var dwq = L.out_act.dw[q]; dd.w[q] = dwq > 0 ? dwq : 0.0; }
+             draw_activations_COLOR(activations_div, dd, scale);
+             for(var q=0;q<ni;q++) { var dwq = L.out_act.dw[q]; dd.w[q] = dwq < 0 ? -dwq : 0.0; }
+             draw_activations_COLOR(activations_div, dd, scale);
+             */
+
+            /*
+             // visualize what the network would like the image to look like more
+             var dd = L.out_act.clone();
+             var ni = L.out_act.w.length;
+             for(var q=0;q<ni;q++) { var dwq = L.out_act.dw[q]; dd.w[q] -= 20*dwq; }
+             draw_activations_COLOR(activations_div, dd, scale);
+             */
+
+            /*
+             // visualize gradient magnitude
+             var dd = L.out_act.clone();
+             var ni = L.out_act.w.length;
+             for(var q=0;q<ni;q++) { var dwq = L.out_act.dw[q]; dd.w[q] = dwq*dwq; }
+             draw_activations_COLOR(activations_div, dd, scale);
+             */
+
+        } else {
+            draw_activations(activations_div, L.out_act, scale);
+        }
 
         // visualize data gradients
-        if(L.layer_type !== 'softmax') {
+        if(L.layer_type !== 'softmax' && L.layer_type !== 'input' ) {
             var grad_div = document.createElement('div');
             grad_div.appendChild(document.createTextNode('Activation Gradients:'));
             grad_div.appendChild(document.createElement('br'));
@@ -218,18 +305,26 @@ var visualize_activations = function(net, elt) {
                 filters_div.appendChild(document.createTextNode('Weights:'));
                 filters_div.appendChild(document.createElement('br'));
                 for(var j=0;j<L.filters.length;j++) {
-                    filters_div.appendChild(document.createTextNode('('));
-                    draw_activations(filters_div, L.filters[j], 2);
-                    filters_div.appendChild(document.createTextNode(')'));
+                    // HACK to draw in color for first layer conv filters
+                    if(i===1) {
+                        draw_activations_COLOR(filters_div, L.filters[j], 2);
+                    } else {
+                        filters_div.appendChild(document.createTextNode('('));
+                        draw_activations(filters_div, L.filters[j], 2);
+                        filters_div.appendChild(document.createTextNode(')'));
+                    }
                 }
                 // gradients
                 filters_div.appendChild(document.createElement('br'));
                 filters_div.appendChild(document.createTextNode('Weight Gradients:'));
                 filters_div.appendChild(document.createElement('br'));
                 for(var j=0;j<L.filters.length;j++) {
-                    filters_div.appendChild(document.createTextNode('('));
-                    draw_activations(filters_div, L.filters[j], 2, true);
-                    filters_div.appendChild(document.createTextNode(')'));
+                    if(i===1) { draw_activations_COLOR(filters_div, L.filters[j], 2, true); }
+                    else {
+                        filters_div.appendChild(document.createTextNode('('));
+                        draw_activations(filters_div, L.filters[j], 2, true);
+                        filters_div.appendChild(document.createTextNode(')'));
+                    }
                 }
             } else {
                 filters_div.appendChild(document.createTextNode('Weights hidden, too small'));
@@ -269,7 +364,7 @@ var visualize_activations = function(net, elt) {
         layer_div.appendChild(document.createElement('br'));
 
         // number of parameters
-        if(L.layer_type==='conv') {
+        if(L.layer_type==='conv' || L.layer_type==='local') {
             var tot_params = L.sx*L.sy*L.in_depth*L.filters.length + L.filters.length;
             var t = 'parameters: ' + L.filters.length + 'x' + L.sx + 'x' + L.sy + 'x' + L.in_depth + '+' + L.filters.length + ' = ' + tot_params;
             layer_div.appendChild(document.createTextNode(t));
@@ -298,6 +393,8 @@ var load_and_step = function() {
 
     var sample = sample_training_instance();
     step(sample); // process this image
+
+    //setTimeout(load_and_step, 0); // schedule the next iteration
 }
 
 // evaluate current network on test set
@@ -305,8 +402,11 @@ var test_predict = function() {
     var num_classes = net.layers[net.layers.length-1].out_depth;
 
     document.getElementById('testset_acc').innerHTML = '';
+    var num_total = 0;
+    var num_correct = 0;
+
     // grab a random test image
-    for(num=0;num<50;num++) {
+    for(num=0;num<4;num++) {
         var sample = sample_test_instance();
         var y = sample.label;  // ground truth label
 
@@ -323,11 +423,15 @@ var test_predict = function() {
         for(var k=0;k<aavg.w.length;k++) { preds.push({k:k,p:aavg.w[k]}); }
         preds.sort(function(a,b){return a.p<b.p ? 1:-1;});
 
+        var correct = preds[0].k===y;
+        if(correct) num_correct++;
+        num_total++;
+
         var div = document.createElement('div');
         div.className = 'testdiv';
 
         // draw the image into a canvas
-        draw_activations(div, xs[0], 2); // draw Vol into canv
+        draw_activations_COLOR(div, xs[0], 2); // draw Vol into canv
 
         // add predictions
         var probsdiv = document.createElement('div');
@@ -335,22 +439,27 @@ var test_predict = function() {
         var t = '';
         for(var k=0;k<3;k++) {
             var col = preds[k].k===y ? 'rgb(85,187,85)' : 'rgb(187,85,85)';
-            t += '<div class=\"pp\" style=\"width:' + Math.floor(preds[k].p/n*100) + 'px; margin-left: 60px; background-color:' + col + ';\">' + classes_txt[preds[k].k] + '</div>'
+            t += '<div class=\"pp\" style=\"width:' + Math.floor(preds[k].p/n*100) + 'px; margin-left: 70px; background-color:' + col + ';\">' + classes_txt[preds[k].k] + '</div>'
         }
         probsdiv.innerHTML = t;
         div.appendChild(probsdiv);
 
         // add it into DOM
-        $("#testset_acc").append(div).fadeIn(1000);
+        $(div).prependTo($("#testset_vis")).hide().fadeIn('slow').slideDown('slow');
+        if($(".probsdiv").length>200) {
+            $("#testset_vis > .probsdiv").last().remove(); // pop to keep upper bound of shown items
+        }
     }
+    testAccWindow.add(num_correct/num_total);
+    $("#testset_acc").text('test accuracy based on last 200 test images: ' + testAccWindow.get_average());
 }
-
 
 var lossGraph = new cnnvis.Graph();
 var xLossWindow = new cnnutil.Window(100);
 var wLossWindow = new cnnutil.Window(100);
 var trainAccWindow = new cnnutil.Window(100);
 var valAccWindow = new cnnutil.Window(100);
+var testAccWindow = new cnnutil.Window(50, 1);
 var step_num = 0;
 var step = function(sample) {
 
@@ -420,13 +529,13 @@ var step = function(sample) {
     }
 
     // run prediction on test set
-    if(step_num % 1000 === 0) {
+    if((step_num % 100 === 0 && step_num > 0) || step_num===100) {
         test_predict();
     }
     step_num++;
 }
 
-// user settings
+// user settings 
 var change_lr = function() {
     trainer.learning_rate = parseFloat(document.getElementById("lr_input").value);
     update_net_param_display();
@@ -456,12 +565,14 @@ var toggle_pause = function() {
     else { btn.value = 'pause'; }
 }
 var dump_json = function() {
-    document.getElementById("dumpjson").value = JSON.stringify(net.toJSON());
+    document.getElementById("dumpjson").value = JSON.stringify(this.net.toJSON());
 }
 var clear_graph = function() {
     lossGraph = new cnnvis.Graph(); // reinit graph too
 }
 var reset_all = function() {
+    // reinit trainer
+    trainer = new convnetjs.SGDTrainer(net, {learning_rate:trainer.learning_rate, momentum:trainer.momentum, batch_size:trainer.batch_size, l2_decay:trainer.l2_decay});
     update_net_param_display();
 
     // reinit windows that keep track of val/train accuracies
@@ -469,6 +580,7 @@ var reset_all = function() {
     wLossWindow.reset();
     trainAccWindow.reset();
     valAccWindow.reset();
+    testAccWindow.reset();
     lossGraph = new cnnvis.Graph(); // reinit graph too
     step_num = 0;
 }
@@ -479,14 +591,28 @@ var load_from_json = function() {
     net.fromJSON(json);
     reset_all();
 }
+
+var load_pretrained = function() {
+    $.getJSON("cifar10_snapshot.json", function(json){
+        net = new convnetjs.Net();
+        net.fromJSON(json);
+        trainer.learning_rate = 0.0001;
+        trainer.momentum = 0.9;
+        trainer.batch_size = 2;
+        trainer.l2_decay = 0.00001;
+        reset_all();
+    });
+}
+
 var change_net = function() {
     eval($("#newnet").val());
     reset_all();
 }
+
 var post_model_to_server = function() {
     net_in_JSON = JSON.stringify(net.toJSON());
-    var parameters = {model_name: "MNIST", net: net_in_JSON };
-    console.log("Sending net_in_JSON: " + parameters.net);
+    var parameters = {model_name: "CIFAR10", net: net_in_JSON };
+    console.log("Sending CIFAR10 net_in_JSON: " + parameters.net);
     $.post('/store_model_on_server', parameters, function(data) {
         console.log(data);
         //var json = JSON.parse(data);
@@ -496,8 +622,8 @@ var post_model_to_server = function() {
     });
 }
 var get_model_from_server = function() {
-    var parameters = {model_name: "MNIST" };
-    $.get('/get_model_from_server', parameters, function(data) {
+    var parameters = {model_name: "CIFAR10" };
+    $.get('/test_model_from_server', parameters, function(data) {
         console.log(data);
         //var json = JSON.parse(data);
         //net = new convnetjs.Net();

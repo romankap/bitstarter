@@ -1,5 +1,5 @@
 var layer_defs, net, trainer;
-var t = "layer_defs = [];\n\
+/*var t = "layer_defs = [];\n\
 layer_defs.push({type:'input', out_sx:24, out_sy:24, out_depth:1});\n\
 layer_defs.push({type:'conv', sx:5, filters:8, stride:1, pad:2, activation:'relu'});\n\
 layer_defs.push({type:'pool', sx:2, stride:2});\n\
@@ -11,7 +11,14 @@ net = new convnetjs.Net();\n\
 net.makeLayers(layer_defs);\n\
 \n\
 trainer = new convnetjs.SGDTrainer(net, {method:'adadelta', batch_size:20, l2_decay:0.001});\n\
-";
+";*/
+
+var t;
+var AJAX_init_parameters = {model_name: "MNIST" };
+$.get('/get_init_model_from_server', AJAX_init_parameters, function(data) {
+    console.log(data);
+    t = data;
+});
 
 // ------------------------
 // BEGIN MNIST SPECIFIC STUFF
@@ -55,7 +62,7 @@ var sample_training_instance = function() {
 
 // sample a random testing instance
 var sample_test_instance = function() {
-    var b = 20;
+    var b = test_batch;
     var k = Math.floor(Math.random()*3000);
     var n = b*3000+k;
 
@@ -76,6 +83,7 @@ var sample_test_instance = function() {
 }
 
 var num_batches = 21; // 20 training batches, 1 test
+var test_batch = 20;
 var data_img_elts = new Array(num_batches);
 var img_data = new Array(num_batches);
 var loaded = new Array(num_batches);
@@ -92,12 +100,12 @@ $(window).load(function() {
     for(var k=0;k<loaded.length;k++) { loaded[k] = false; }
 
     load_data_batch(0); // async load train set batch 0 (6 total train batches)
-    load_data_batch(20); // async load test set (batch 6)
+    load_data_batch(test_batch); // async load test set (batch 6)
     start_fun();
 });
 
 var start_fun = function() {
-    if(loaded[0] && loaded[20]) {
+    if(loaded[0] && loaded[test_batch]) {
         console.log('starting!');
         setInterval(load_and_step, 0); // lets go!
     }
@@ -117,7 +125,7 @@ var load_data_batch = function(batch_num) {
         data_ctx.drawImage(data_img_elt, 0, 0); // copy it over... bit wasteful :(
         img_data[batch_num] = data_ctx.getImageData(0, 0, data_canvas.width, data_canvas.height);
         loaded[batch_num] = true;
-        if(batch_num < 20) { loaded_train_batches.push(batch_num); }
+        if(batch_num < test_batch) { loaded_train_batches.push(batch_num); }
         console.log('finished loading data batch ' + batch_num);
     };
     data_img_elt.src = "https://s3.eu-central-1.amazonaws.com/bitstarter-dl/mnist/mnist_batch_" + batch_num + ".png";

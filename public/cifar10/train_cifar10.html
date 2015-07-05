@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<!--[if IE 8]> <html lang="en" class="ie8"> <![endif]-->
+<!--[if IE 9]> <html lang="en" class="ie9"> <![endif]-->
+<!--[if !IE]><!--> <html lang="en"> <!--<![endif]-->
+<head>
+  <title>Crowdcomputed Deep Learning</title>
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://d396qusza40orc.cloudfront.net/startup%2Fcode%2Fbootstrap-combined.no-icons.min.css">
+  <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css">
+  <link rel="stylesheet" href="http://d396qusza40orc.cloudfront.net/startup%2Fcode%2Fsocial-buttons.css">
+  <script src="http://d396qusza40orc.cloudfront.net/startup%2Fcode%2Fjquery.js"></script>
+  <script src="http://d396qusza40orc.cloudfront.net/startup%2Fcode%2Fbootstrap.js"></script>
+  <link href="http://fonts.googleapis.com/css?family=Ubuntu:300,400,500,700,300italic,400italic,500italic,700italic" rel="stylesheet" type="text/css">
+  <link href="http://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,300,400,600,700,800" rel="stylesheet" type="text/css">
+  <link href="http://fonts.googleapis.com/css?family=Lato:300italic,400italic,600italic,700italic,300,400,600,700,800" rel="stylesheet" type="text/css">
+  <link rel="stylesheet" type="text/css" href="css/custom.css">
+  <link rel="stylesheet" type="text/css" href="css/ConvNetJS.css">
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="description" content="">
+  <meta name="author" content="">
+
+  <script src="jquery-1.8.3.min.js"></script>
+  <script src="build/vis.js"></script>
+  <script src="build/util.js"></script>
+  <script src="build/convnet.js"></script>
+
+  <script src="cifar10/cifar10_labels.js"></script>
+  <script src="cifar10/cifar10_client.js"></script>
+
+</head>
+
+<body>
+
+<div class="navbar navbar-inverse navbar-fixed-top">
+  <div class="navbar-inner">
+    <div class="container">
+      <button type="button" class="btn btn-navbar"
+              data-toggle="collapse" data-target=".nav-collapse">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="brand" href="/">DL CrowdCruncher</a>
+      <div class="nav-collapse collapse">
+        <ul class="nav">
+          <li><a href="/train_mnist">MNIST</a></li>
+          <li class="active"><a href="/train_cifar10">CIFAR10</a></li>
+        </ul>
+      </div><!--/.nav-collapse -->
+    </div>
+  </div>
+</div>
+
+<div class="container">
+  <div class="col-sm-12 text-center">
+    <h2 ><a href="http://cs.stanford.edu/people/karpathy/convnetjs/">ConvNetJS</a> CIFAR10 demo</h2>
+    <h1 class="convnet-headline">Description</h1>
+    <p>This webpage embeds a calculation of a scientific function. By visiting this page you're contributing some of your machine's computational power to science. You deserve a pat on the back.</p>
+    <p>Did you, by any chance, notice how much effort did this contribution required? That's right, ZERO!</p>
+    <p>By visiting page similar to this, you can help your fellow scientists and maybe someday in the future, contribute to solving much larger and higher-impact problems.</p>
+
+    <h1 class="convnet-headline">Training Stats</h1>
+    <div class="secpart col-sm-push-1 col-sm-4">
+      <input id="buttontp" type="submit" value="resume" onclick="toggle_pause();" style="width: 100px; height:30px; background-color: #FCC;"/>
+      <div id="trainstats"></div>
+
+      <div id="controls">
+        Learning rate: <input name="lri" type="text" maxlength="20" id="lr_input"/>
+        <br />
+
+        Momentum: <input name="momi" type="text" maxlength="20" id="momentum_input"/>
+        <br />
+
+        Batch size: <input name="bsi" type="text" maxlength="20" id="batch_size_input"/>
+        <br />
+
+        Weight decay: <input name="wdi" type="text" maxlength="20" id="decay_input"/>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+
+<!--[if lt IE 9]>
+<script src="assets/plugins/respond.js"></script>
+<![endif]-->
+<script>
+</script>
+</body>
+</html>	
