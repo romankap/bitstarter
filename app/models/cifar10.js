@@ -30,7 +30,7 @@ exports.init_model = init_model;
 //exports.convnet = convnet.convnetjs;
 
 eval(init_model);
-cifar10_manager.store_weights(net.toJSON());
+cifar10_manager.store_weights(JSON.stringify(net.toJSON()));
 
 exports.net_manager = cifar10_manager;
 

@@ -6,6 +6,7 @@ var layer_defs, net, trainer;
 var classes_txt = ['airplane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck'];
 
 var use_validation_data = true;
+var first_execution = true;
 var sample_training_instance = function () {
 
     // find an unloaded batch
@@ -568,17 +569,17 @@ var update_net_param_display = function() {
 var compute = function() {
     paused = !paused;
     var btn = document.getElementById('buttontp');
-    if(paused) {
+    if (paused) {
         btn.value = 'compute'
-        get_net_from_server();
-        get_batch_num_from_server();
+        post_net_to_server();
     }
     else {
         btn.value = 'pause';
+        get_net_from_server();
+        get_batch_num_from_server();
     }
-
-
 }
+
 var dump_json = function() {
     document.getElementById("dumpjson").value = JSON.stringify(this.net.toJSON());
 }
@@ -647,8 +648,16 @@ var get_net_from_server = function() {
     $.get('/get_net_from_server', parameters, function(data) {
         console.log("<get_net_from_server> Received " + parameters.model_name + " net back");
         console.log("<get_net_from_server> Received " + data.net.length + " net in length back"); //DEBUG
+        //console.log("<get_net_from_server> Received the net: " + data.net);
+
         net = new convnetjs.Net();
-        net.fromJSON(data.net);
+        net.fromJSON(JSON.parse(data.net));
+        //trainer = new convnetjs.SGDTrainer(net,{method:'adadelta', batch_size:4, l2_decay:0.0001});
+        //trainer.learning_rate = 0.0001;
+        //trainer.momentum = 0.9;
+        //trainer.batch_size = 2;
+        //trainer.l2_decay = 0.00001;
+        reset_all();
     });
 }
 var get_model_from_server = function() {
