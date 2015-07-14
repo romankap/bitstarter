@@ -72,9 +72,9 @@ app.get('/get_init_model_from_server', function(request, response){
     }
 });
 
-app.get('/get_net_from_server', function(request, response){
+app.get('/get_net_and_batch_from_server', function(request, response){
     if (request.query.model_name === "CIFAR10") {
-        parameters = {net : cifar10.net_manager.get_weights(), batch_num: cifar10.net_manager.get_batch_num()};
+        parameters = {net : cifar10.net_manager.get_weights(), batch_num: cifar10.net_manager.get_and_update_batch_num()};
         //parameters = {net : cifar10.net_manager.get_weights()};
         //console.log(" <get_init_model_from_server> Sending the following net after `stringify`: " + parameters.net.substring(0, 1000));
         response.send(parameters);

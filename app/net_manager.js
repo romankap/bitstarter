@@ -24,6 +24,10 @@ module.exports = function (tot_batches) {
         },
 
         get_batch_num: function () {
+            return batch_num;
+        },
+
+        get_and_update_batch_num: function () {
             var curr_batch = batch_num;
             increase_batch_num();
             console.log("<get_batch_num> batch_num = " + batch_num + ". Total_batches = " + total_batches);

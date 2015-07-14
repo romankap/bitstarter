@@ -669,9 +669,10 @@ var get_batch_num_from_server = function() {
 var get_net_and_batch_from_server = function() {
     var parameters = {model_name: "CIFAR10"};
     var batch_num;
-    $.get('/get_net_from_server', parameters, function(data) {
-        console.log("<get_net_from_server> Received " + parameters.model_name + " net back");
-        console.log("<get_net_from_server> Received " + data.net.length + " net in length back"); //DEBUG
+    $.get('/get_net_and_batch_from_server', parameters, function(data) {
+        console.log("<get_net_and_batch_from_server> Received " + parameters.model_name + " net back");
+        console.log("<get_net_and_batch_from_server> Received " + data.net.length + " net in length back"); //DEBUG
+        console.log("<get_net_and_batch_from_server> Working on batch: " + data.batch_num); //DEBUG
         //console.log("<get_net_from_server> Received the net: " + data.net);
 
         net = new convnetjs.Net();
