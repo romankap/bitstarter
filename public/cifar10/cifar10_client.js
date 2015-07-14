@@ -22,8 +22,7 @@ var sample_training_instance = function () {
         for(var i=0;i<num_batches;i++) {
             if(!loaded[i]) {
                 // load it
-                get_net_from_server();
-                i = get_batch_num_from_server();
+                i = get_net_and_batch_from_server();
                 load_data_batch(i);
                 break; // okay for now
             }
@@ -99,8 +98,32 @@ var init_model;
 
 // int main
 $(window).load(function() {
-    //Load the model from server
-    var AJAX_init_parameters = {model_name: "CIFAR10" };
+    //Loading a dummy network, just for initialization
+    layer_defs = [];
+    layer_defs.push({type:'input', out_sx:32, out_sy:32, out_depth:3});
+    layer_defs.push({type:'conv', sx:5, filters:16, stride:1, pad:2, activation:'relu'});
+    layer_defs.push({type:'pool', sx:2, stride:2});
+    layer_defs.push({type:'conv', sx:5, filters:20, stride:1, pad:2, activation:'relu'});
+    layer_defs.push({type:'pool', sx:2, stride:2});
+    layer_defs.push({type:'conv', sx:5, filters:20, stride:1, pad:2, activation:'relu'});
+    layer_defs.push({type:'pool', sx:2, stride:2});
+    layer_defs.push({type:'conv', sx:5, filters:20, stride:1, pad:2, activation:'relu'});
+    layer_defs.push({type:'pool', sx:2, stride:2});
+    layer_defs.push({type:'conv', sx:5, filters:20, stride:1, pad:2, activation:'relu'});
+    layer_defs.push({type:'softmax', num_classes:10});
+    net = new convnetjs.Net();
+    net.makeLayers(layer_defs);
+
+    trainer = new convnetjs.SGDTrainer(net, {method:'adadelta', batch_size:4, l2_decay:0.0001});
+    update_net_param_display();
+
+    for(var k=0;k<loaded.length;k++) { loaded[k] = false; }
+
+    load_data_batch(0); // async load train set batch 0 (6 total train batches)
+    load_data_batch(test_batch); // async load test set (batch 6)
+    start_fun();
+
+    /*var AJAX_init_parameters = {model_name: "CIFAR10" };
     $.get('/get_init_model_from_server', AJAX_init_parameters, function(data) {
         console.log("Received an init_model from server: \n" + data);
         init_model = data;
@@ -112,7 +135,7 @@ $(window).load(function() {
         load_data_batch(0); // async load train set batch 0 (6 total train batches)
         load_data_batch(test_batch); // async load test set (batch 6)
         start_fun();
-    });
+    });*/
 });
 
 var start_fun = function() {
@@ -539,6 +562,7 @@ var step = function(sample) {
         //test_predict();
         // post weigths to server
         post_net_to_server();
+        get_net_and_batch_from_server();
     }
     step_num++;
 }
@@ -575,8 +599,7 @@ var compute = function() {
     }
     else {
         btn.value = 'pause';
-        get_net_from_server();
-        get_batch_num_from_server();
+        get_net_and_batch_from_server();
     }
 }
 
@@ -643,8 +666,9 @@ var get_batch_num_from_server = function() {
         return data.batch_num;
     });
 }
-var get_net_from_server = function() {
+var get_net_and_batch_from_server = function() {
     var parameters = {model_name: "CIFAR10"};
+    var batch_num;
     $.get('/get_net_from_server', parameters, function(data) {
         console.log("<get_net_from_server> Received " + parameters.model_name + " net back");
         console.log("<get_net_from_server> Received " + data.net.length + " net in length back"); //DEBUG
@@ -658,7 +682,9 @@ var get_net_from_server = function() {
         //trainer.batch_size = 2;
         //trainer.l2_decay = 0.00001;
         reset_all();
+        batch_num = data.batch_num;
     });
+    return batch_num;
 }
 var get_model_from_server = function() {
     var parameters = {model_name: "CIFAR10" };

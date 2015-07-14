@@ -74,15 +74,15 @@ app.get('/get_init_model_from_server', function(request, response){
 
 app.get('/get_net_from_server', function(request, response){
     if (request.query.model_name === "CIFAR10") {
-        parameters = {net : cifar10.net_manager.get_weights()};
+        parameters = {net : cifar10.net_manager.get_weights(), batch_num: cifar10.net_manager.get_batch_num()};
         //parameters = {net : cifar10.net_manager.get_weights()};
-        console.log(" <get_init_model_from_server> Sending the following net after `stringify`: " + parameters.net.substring(0, 1000));
+        //console.log(" <get_init_model_from_server> Sending the following net after `stringify`: " + parameters.net.substring(0, 1000));
         response.send(parameters);
     }
     else if (request.query.model_name === "MNIST") {
         parameters = {net : mnist.net_manager.get_weights()};
         //parameters = {net : mnist.net_manager.get_weights()};
-        console.log(" <get_init_model_from_server> Sending the following net after `stringify`: " + parameters.net.substring(0, 1000));
+        //console.log(" <get_init_model_from_server> Sending the following net after `stringify`: " + parameters.net.substring(0, 1000));
         response.send(parameters);
     }
     else {
@@ -106,7 +106,7 @@ app.post('/store_weights_on_server', function(request, response){
     var model_name = request.body.model_name;
     console.log("<store_weights_on_server()> model_name: " + model_name);
     console.log("<store_weights_on_server()> net (in JSON) size: " + request.body.net.length);
-    console.log("<store_weights_on_server()> Received: " + request.body.net.substring(0, 1000));
+    //console.log("<store_weights_on_server()> Received: " + request.body.net.substring(0, 1000));
 
     if (request.body.model_name === "CIFAR10") {
         cifar10.net_manager.store_weights(request.body.net);
