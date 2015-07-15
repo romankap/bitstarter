@@ -677,6 +677,7 @@ var get_net_and_batch_from_server = function() {
     $.get('/get_net_and_batch_from_server', parameters, function(data) {
         console.log("<get_net_and_batch_from_server> Received " + parameters.model_name + " net back");
         console.log("<get_net_and_batch_from_server> Received " + data.net.length + " net in length back"); //DEBUG
+        console.log("\n=======\n<get_net_and_batch_from_server> Received the NET" + data.net.substring(0,500) + "\n"); //DEBUG
         console.log("<get_net_and_batch_from_server> Working on batch: " + data.batch_num); //DEBUG
         //console.log("<get_net_from_server> Received the net: " + data.net);
 

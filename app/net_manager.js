@@ -51,10 +51,13 @@ module.exports = function (tot_batches) {
         update_model_from_gradients: function(gradients_from_client) {
             gradients = gradients_from_client;
             gradients_in_JSON = JSON.parse(gradients);
-            console.log("<Update model from gradients> Received the gradients" + gradients.substring(0, 2000) + "\n\n");
-            console.log("<Update model from gradients> Current weights" + weights.substring(0, 2000));
+            console.log("\n");
+            console.log("<Update model from gradients> Received the gradients" + gradients.substring(0, 500) + "\n");
+            console.log("<Update model from gradients> Current weights (BEFORE Update)" + weights.substring(0, 500) + "\n");
 
             add_gradients(weights_in_JSON, gradients_in_JSON);
+            weights = JSON.stringify(weights_in_JSON);
+            console.log("<Update model from gradients> Current weights (After Update)" + weights.substring(0, 500) + "\n");
         },
 
         get_weights: function() {
