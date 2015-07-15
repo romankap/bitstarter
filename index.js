@@ -76,7 +76,7 @@ app.get('/get_net_and_batch_from_server', function(request, response){
     if (request.query.model_name === "CIFAR10") {
         parameters = {net : cifar10.net_manager.get_weights(), batch_num: cifar10.net_manager.get_and_update_batch_num()};
         //parameters = {net : cifar10.net_manager.get_weights()};
-        //console.log(" <get_init_model_from_server> Sending the following net after `stringify`: " + parameters.net.substring(0, 1000));
+        console.log(" <get_init_model_from_server> Sending the following net after `stringify`: " + parameters.net.substring(0, 1000));
         response.send(parameters);
     }
     else if (request.query.model_name === "MNIST") {
@@ -109,16 +109,10 @@ app.post('/store_weights_on_server', function(request, response){
     //console.log("<store_weights_on_server()> Received: " + request.body.net.substring(0, 1000));
 
     if (request.body.model_name === "CIFAR10") {
-        cifar10.net_manager.store_weights(request.body.net);
+        cifar10.net_manager.update_model_from_gradients(request.body.net);
 
         //DEBUG - testing to see if net is stored properly
         console.log("<store weights on server>: Checking if net is stored properly");
-        if (request.body.net === cifar10.net_manager.get_weights()) {
-            console.log("<store weights on server>: SUCCESS!!! - weights are stored properly");
-        }
-        else {
-            console.log("<store weights on server>: Failure... weights aren't stored properly");
-        }
     }
     else if (request.body.model_name === "MNIST") {
         mnist.net_manager.store_weights(request.body.net);
