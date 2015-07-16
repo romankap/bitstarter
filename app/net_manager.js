@@ -23,14 +23,14 @@ module.exports = function (tot_batches) {
 
     var gradients_calculator = {
         traverse: function (net_weight, gradient, property_name) {
-
             for (var i in gradient) {
-
                 if (gradient[i] !== null && typeof(gradient[i]) == "object") {
                     //going on step down in the object tree!!
                     this.traverse(net_weight[i], gradient[i], property_name + "." + i);
                 }
-                else if (gradient[i] !== null && typeof(gradient[i]) !== "object" && isNumeric(i)) {
+                else if (gradient[i] !== null && typeof(gradient[i]) !== "object" &&
+                        net_weight[i] !== null && typeof(net_weight[i]) !== "object" &&
+                        isNumeric(i) ) {
                     net_weight[i] += gradient[i];
                 }
             }
