@@ -67,6 +67,9 @@ module.exports = function (tot_batches) {
         get_batch_num: function () {
             return batch_num;
         },
+        reset_batch_num: function () {
+            batch_num = 0;
+        },
 
         get_and_update_batch_num: function () {
             var curr_batch = batch_num;

@@ -28,6 +28,7 @@ exports.init_model = init_model;
 var reset_model =  function () {
     eval(init_model);
     cifar10_manager.store_weights(net.toJSON());
+    cifar10_manager.reset_batch_num();
 };
 
 var store_new_model = function (new_model) {
@@ -35,6 +36,7 @@ var store_new_model = function (new_model) {
     new_model_in_JSON = JSON.parse(new_model);
     net.fromJSON(new_model_in_JSON);
     cifar10_manager.store_weights(new_model_in_JSON);
+    cifar10_manager.reset_batch_num();
 };
 
 reset_model();
