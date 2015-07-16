@@ -45,12 +45,6 @@
                 <span class="icon-bar"></span>
             </button>
             <a class="brand" href="#">DL CrowdCruncher</a>
-            <div class="nav-collapse collapse">
-                <ul class="nav">
-                    <li><a href="/train_mnist">MNIST</a></li>
-                    <li><a href="/train_cifar10">CIFAR10</a></li>
-                </ul>
-            </div><!--/.nav-collapse -->
         </div>
     </div>
 </div>
@@ -74,7 +68,8 @@
 
             <h1 class="convnet-headline">Training Stats</h1>
             <div class="secpart col-sm-push-1 col-sm-4">
-                <input id="buttontp" type="submit" value="resume" onclick="toggle_pause();" style="width: 100px; height:30px; background-color: #FCC;"/>
+                <input id="toggle-validate-btn" type="submit" value="Start Validation" onclick="toggle_validate();" class="btn btn-large btn-success start-computing-btn"/>
+
                 <div id="trainstats"></div>
 
                 <div id="controls">

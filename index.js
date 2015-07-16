@@ -8,7 +8,8 @@ var fs = require('fs');
 var config = require('./config');
 //var db = require('./app/db');
 var cifar10 = require('./app/models/cifar10');
-var mnist = require('./app/models/mnist');
+
+var curr_model_ID = 0;
 
 var app = express();
 app.use(bodyParser.json({limit: '10mb'})); // support json encoded bodies
@@ -53,14 +54,18 @@ app.get('/get_init_model_from_server', function(request, response){
 });
 
 app.get('/get_net_and_update_batch_from_server', function(request, response){
-    var parameters = {net : cifar10.net_manager.get_weights(), batch_num: cifar10.net_manager.get_and_update_batch_num()};
+    model_parameters = cifar10.net_manager.get_model_parameters();
+    var parameters = {net : cifar10.net_manager.get_weights(), batch_num: cifar10.net_manager.get_and_update_batch_num(), model_ID: curr_model_ID,
+                        learning_rate : model_parameters.learning_rate , momentum : model_parameters.momentum , l2_decay: model_parameters .l2_decay};
     //parameters = {net : cifar10.net_manager.get_weights()};
-    console.log(" <get_net_and_batch_from_server> Sending the following net after `stringify`: " + parameters.net.substring(0, 1000));
+    console.log(" <get_net_and_update_batch_from_server> Sending the following net after `stringify`: " + parameters.net.substring(0, 1000));
     response.send(parameters);
 });
 
-app.get('/get_net_batch_from_server', function(request, response){
-    var parameters = {net : cifar10.net_manager.get_weights(), batch_num: cifar10.net_manager.get_batch_num()};
+app.get('/get_net_and_batch_from_server', function(request, response){
+    model_parameters = cifar10.net_manager.get_model_parameters();
+    var parameters = {net : cifar10.net_manager.get_weights(), batch_num: cifar10.net_manager.get_batch_num(), model_ID: curr_model_ID,
+        learning_rate : model_parameters.learning_rate , momentum : model_parameters.momentum , l2_decay: model_parameters .l2_decay};
     //parameters = {net : cifar10.net_manager.get_weights()};
     console.log(" <get_net_and_batch_from_server> Sending the following net after `stringify`: " + parameters.net.substring(0, 1000));
     response.send(parameters);
@@ -73,19 +78,14 @@ app.get('/get_batch_num_from_server', function(request, response) {
     response.send(parameters);
 });
 
-app.get('/test_model_from_server', function(request, response){
-    console.log("Received a test request");
-    //Send net.JSON to client + test batch name
-});
-
-app.post('/store_weights_on_server', function(request, response){
+app.post('/update_model_from_gradients', function(request, response){
     //Expecting to receive JSON of the form: {model_name: <model name>, net: <net in JSON>}
     var model_name = request.body.model_name;
     console.log("<store_weights_on_server()> model_name: " + model_name);
     console.log("<store_weights_on_server()> net (in JSON) size: " + request.body.net.length);
     //console.log("<store_weights_on_server()> Received: " + request.body.net.substring(0, 1000));
 
-    cifar10.net_manager.update_model_from_gradients(request.body.net);
+    cifar10.net_manager.update_model_from_gradients(request.body);
 
     response.send("Stored " + model_name + " weights on Node.js server");
 });

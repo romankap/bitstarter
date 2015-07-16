@@ -7,6 +7,9 @@ var classes_txt = ['airplane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'hor
 
 var use_validation_data = true;
 var first_execution = true;
+var validation_frequency = 5 * 1000;
+var prediction_interval;
+var get_validations = false;
 
 /*$(function ()
 {
@@ -32,6 +35,27 @@ $(window).load(function() {
     });
 });
 
+var test_prediction_accuracy = function () {
+    get_net_and_batch_from_server();
+}
+if (get_validations)
+    validation_interval = setInterval(test_prediction_accuracy, validation_frequency);
+
+///// Communicating with the server
+
+var toggle_validate = function () {
+    var btn = document.getElementById('toggle-validate-btn');
+    get_validations = !get_validations;
+    if (get_validations) {
+        validation_interval = setInterval(test_prediction_accuracy, validation_frequency);
+        btn.value = 'Stop Validating';
+    }
+    else {
+        clearInterval(validation_interval);
+        btn.value = 'Start Validating';
+    }
+}
+
 var get_batch_num_from_server = function() {
     var parameters = {model_name: "CIFAR10" };
     $.get('/get_batch_num_from_server', parameters, function(data) {
@@ -54,13 +78,18 @@ var get_net_and_batch_from_server = function() {
         net.fromJSON(JSON.parse(data.net));
         reset_all();
         batch_num = data.batch_num;
+
+        var vis_elt = document.getElementById("visnet");
+        visualize_activations(net, vis_elt);
+        test_predict();
+        update_net_param_display();
     });
     return batch_num;
 }
 
 var get_model_from_server = function() {
     var parameters = {model_name: "CIFAR10" };
-    $.get('/test_model_from_server', parameters, function(data) {
+    $.get('/get_model_from_server', parameters, function(data) {
         console.log(data);
         //var json = JSON.parse(data);
         //net = new convnetjs.Net();
@@ -68,6 +97,7 @@ var get_model_from_server = function() {
         //reset_all();
     });
 }
+
 var reset_model = function() {
     var parameters = {model_name: "CIFAR10"};
 

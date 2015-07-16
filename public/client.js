@@ -450,83 +450,6 @@ var wLossWindow = new cnnutil.Window(100);
 var trainAccWindow = new cnnutil.Window(100);
 var valAccWindow = new cnnutil.Window(100);
 var testAccWindow = new cnnutil.Window(50, 1);
-var step_num = 0;
-var step = function(sample) {
-
-    var x = sample.x;
-    var y = sample.label;
-
-    if(sample.isval) {
-        // use x to build our estimate of validation error
-        net.forward(x);
-        var yhat = net.getPrediction();
-        var val_acc = yhat === y ? 1.0 : 0.0;
-        valAccWindow.add(val_acc);
-        return; // get out
-    }
-
-    // train on it with network
-    var stats = trainer.train(x, y);
-    var lossx = stats.cost_loss;
-    var lossw = stats.l2_decay_loss;
-
-    // keep track of stats such as the average training error and loss
-    var yhat = net.getPrediction();
-    var train_acc = yhat === y ? 1.0 : 0.0;
-    xLossWindow.add(lossx);
-    wLossWindow.add(lossw);
-    trainAccWindow.add(train_acc);
-
-    // visualize training status
-    var train_elt = document.getElementById("trainstats");
-    train_elt.innerHTML = '';
-    var t = 'Forward time per example: ' + stats.fwd_time + 'ms';
-    train_elt.appendChild(document.createTextNode(t));
-    train_elt.appendChild(document.createElement('br'));
-    var t = 'Backprop time per example: ' + stats.bwd_time + 'ms';
-    train_elt.appendChild(document.createTextNode(t));
-    train_elt.appendChild(document.createElement('br'));
-    var t = 'Classification loss: ' + f2t(xLossWindow.get_average());
-    train_elt.appendChild(document.createTextNode(t));
-    train_elt.appendChild(document.createElement('br'));
-    var t = 'L2 Weight decay loss: ' + f2t(wLossWindow.get_average());
-    train_elt.appendChild(document.createTextNode(t));
-    train_elt.appendChild(document.createElement('br'));
-    var t = 'Training accuracy: ' + f2t(trainAccWindow.get_average());
-    train_elt.appendChild(document.createTextNode(t));
-    train_elt.appendChild(document.createElement('br'));
-    var t = 'Validation accuracy: ' + f2t(valAccWindow.get_average());
-    train_elt.appendChild(document.createTextNode(t));
-    train_elt.appendChild(document.createElement('br'));
-    var t = 'Examples seen: ' + step_num;
-    train_elt.appendChild(document.createTextNode(t));
-    train_elt.appendChild(document.createElement('br'));
-
-    // visualize activations
-    if(step_num % 100 === 0) {
-        var vis_elt = document.getElementById("visnet");
-        visualize_activations(net, vis_elt);
-    }
-
-    // log progress to graph, (full loss)
-    if(step_num % 200 === 0) {
-        var xa = xLossWindow.get_average();
-        var xw = wLossWindow.get_average();
-        if(xa >= 0 && xw >= 0) { // if they are -1 it means not enough data was accumulated yet for estimates
-            lossGraph.add(step_num, xa + xw);
-            lossGraph.drawSelf(document.getElementById("lossgraph"));
-        }
-    }
-
-    // run prediction on test set
-    if((step_num % 100 === 0 && step_num > 0) || step_num===100) {
-        //test_predict();
-        // post weigths to server
-        post_net_to_server();
-        get_net_and_update_batch_from_server();
-    }
-    step_num++;
-}
 
 // user settings 
 var change_lr = function() {
@@ -551,18 +474,7 @@ var update_net_param_display = function() {
     document.getElementById('batch_size_input').value = trainer.batch_size;
     document.getElementById('decay_input').value = trainer.l2_decay;
 }
-var compute = function() {
-    paused = !paused;
-    var btn = document.getElementById('buttontp');
-    if (paused) {
-        btn.value = 'compute'
-        post_net_to_server();
-    }
-    else {
-        btn.value = 'pause';
-        get_net_and_update_batch_from_server();
-    }
-}
+
 
 var dump_json = function() {
     document.getElementById("dumpjson").value = JSON.stringify(this.net.toJSON());
@@ -592,7 +504,7 @@ var load_from_json = function(jsonString) {
 }
 
 var load_pretrained = function() {
-    $.getJSON("cifar10_snapshot.json", function(json){
+    $.getJSON("cifar10/cifar10_snapshot.json", function(json){
         net = new convnetjs.Net();
         net.fromJSON(json);
         trainer.learning_rate = 0.0001;
@@ -607,23 +519,7 @@ var get_random_number = function () {
     return Math.floor((Math.random() * 100000) + 1);
 }
 
-var calculate_gradients = function() {
-    gradients_calculator.traverse(curr_net, old_net, "");
 
-    console.log("<====== After calculating gradients> NEW net: " + JSON.stringify(curr_net).substring(0, 1000));
-}
-
-var post_net_to_server = function() {
-    curr_net = net.toJSON();
-    calculate_gradients();
-    net_in_JSON_string = JSON.stringify(curr_net);
-    var parameters = {model_name: "CIFAR10", net: net_in_JSON_string };
-    console.log("Sending CIFAR10 net_in_JSON with length " + parameters.net.length);
-    console.log("Sending CIFAR10 net: " + parameters.net.substring(0,1000));
-    $.post('/store_weights_on_server', parameters, function(data) {
-        //console.log(data);
-    });
-}
 var get_batch_num_from_server = function() {
     var parameters = {model_name: "CIFAR10" };
     $.get('/get_batch_num_from_server', parameters, function(data) {
@@ -631,34 +527,8 @@ var get_batch_num_from_server = function() {
         return data.batch_num;
     });
 }
-var get_net_and_update_batch_from_server = function() {
-    var parameters = {model_name: "CIFAR10"};
-    var batch_num;
-    $.get('/get_net_and_update_batch_from_server', parameters, function(data) {
-        console.log("<get_net_and_update_batch_from_server> Received " + parameters.model_name + " net back");
-        console.log("<get_net_and_update_batch_from_server> Working on batch: " + data.batch_num); //DEBUG
-        console.log("<get_net_and_update_batch_from_server> Received " + data.net.length + " net in length back"); //DEBUG
-        console.log("<get_net_and_update_batch_from_server> Received the NET" + data.net.substring(0,1000)); //DEBUG
-        //console.log("<get_net_from_server> Received the net: " + data.net);
 
-        old_net = net.toJSON();
-        net = new convnetjs.Net();
-        net.fromJSON(JSON.parse(data.net));
-        reset_all();
-        batch_num = data.batch_num;
-    });
-    return batch_num;
-}
-var get_model_from_server = function() {
-    var parameters = {model_name: "CIFAR10" };
-    $.get('/test_model_from_server', parameters, function(data) {
-        console.log(data);
-        //var json = JSON.parse(data);
-        //net = new convnetjs.Net();
-        //net.fromJSON(json);
-        //reset_all();
-    });
-}
+
 var reset_model = function() {
     var parameters = {model_name: "CIFAR10"};
 
