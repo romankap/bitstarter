@@ -1,35 +1,12 @@
 var layer_defs, net, trainer;
 var old_net, curr_net;
-var gradients_calculator = {
-    traverse: function (new_net_property, old_net_property) {
-        debug_global_counter = 0;
 
-        for (var i in new_net_property) {
-            if (new_net_property[i] !== null && typeof(new_net_property[i]) == "object") {
-                //going on step down in the object tree!!
-                this.traverse(new_net_property[i], old_net_property[i]);
-            }
-            else if (new_net_property[i] !== null && typeof(new_net_property[i]) !== "object" &&
-                    old_net_property[i] !== null && typeof(old_net_property[i]) !== "object" &&
-                    isNumeric(i)) {
-                new_net_property[i] -= old_net_property[i];
-            }
-        }
-    }
-}
-
-var debug_global_counter;
 // ------------------------
 // BEGIN CIFAR10 SPECIFIC STUFF
 // ------------------------
 var classes_txt = ['airplane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck'];
 
 var use_validation_data = true;
-var first_execution = true;
-
-function isNumeric(num) {
-    return !isNaN(num)
-}
 
 var sample_training_instance = function () {
 
@@ -46,7 +23,7 @@ var sample_training_instance = function () {
         for(var i=0;i<num_batches;i++) {
             if(!loaded[i]) {
                 // load it
-                i = get_net_and_batch_from_server();
+                i = get_net_and_update_batch_from_server();
                 load_data_batch(i);
                 break; // okay for now
             }
@@ -120,24 +97,7 @@ var loaded = new Array(num_batches);
 var loaded_train_batches = [];
 var init_model;
 
-// int main
-$(window).load(function() {
-    var AJAX_init_parameters = {model_name: "CIFAR10" };
-    $.get('/get_init_model_from_server', AJAX_init_parameters, function(data) {
-        console.log("Received an init_model from server: \n" + data);
 
-        init_model = data;
-        $("#newnet").val(init_model);
-        eval(init_model);
-        update_net_param_display();
-
-        for(var k=0;k<loaded.length;k++) { loaded[k] = false; }
-
-        load_data_batch(0); // async load train set batch 0 (6 total train batches)
-        load_data_batch(test_batch); // async load test set (batch 6)
-        start_fun();
-    });
-});
 
 var start_fun = function() {
     if(loaded[0] && loaded[test_batch]) {
@@ -563,7 +523,7 @@ var step = function(sample) {
         //test_predict();
         // post weigths to server
         post_net_to_server();
-        get_net_and_batch_from_server();
+        get_net_and_update_batch_from_server();
     }
     step_num++;
 }
@@ -600,7 +560,7 @@ var compute = function() {
     }
     else {
         btn.value = 'pause';
-        get_net_and_batch_from_server();
+        get_net_and_update_batch_from_server();
     }
 }
 
@@ -671,14 +631,14 @@ var get_batch_num_from_server = function() {
         return data.batch_num;
     });
 }
-var get_net_and_batch_from_server = function() {
+var get_net_and_update_batch_from_server = function() {
     var parameters = {model_name: "CIFAR10"};
     var batch_num;
-    $.get('/get_net_and_batch_from_server', parameters, function(data) {
-        console.log("<get_net_and_batch_from_server> Received " + parameters.model_name + " net back");
-        console.log("<get_net_and_batch_from_server> Working on batch: " + data.batch_num); //DEBUG
-        console.log("<get_net_and_batch_from_server> Received " + data.net.length + " net in length back"); //DEBUG
-        console.log("<get_net_and_batch_from_server> Received the NET" + data.net.substring(0,1000)); //DEBUG
+    $.get('/get_net_and_update_batch_from_server', parameters, function(data) {
+        console.log("<get_net_and_update_batch_from_server> Received " + parameters.model_name + " net back");
+        console.log("<get_net_and_update_batch_from_server> Working on batch: " + data.batch_num); //DEBUG
+        console.log("<get_net_and_update_batch_from_server> Received " + data.net.length + " net in length back"); //DEBUG
+        console.log("<get_net_and_update_batch_from_server> Received the NET" + data.net.substring(0,1000)); //DEBUG
         //console.log("<get_net_from_server> Received the net: " + data.net);
 
         old_net = net.toJSON();
