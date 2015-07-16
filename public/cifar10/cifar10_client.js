@@ -9,7 +9,9 @@ var gradients_calculator = {
                 //going on step down in the object tree!!
                 this.traverse(new_net_property[i], old_net_property[i]);
             }
-            else if (new_net_property[i] !== null && typeof(new_net_property[i]) !== "object" && isNumeric(i)) {
+            else if (new_net_property[i] !== null && typeof(new_net_property[i]) !== "object" &&
+                    old_net_property[i] !== null && typeof(old_net_property[i]) !== "object" &&
+                    isNumeric(i)) {
                 new_net_property[i] -= old_net_property[i];
             }
         }
@@ -123,7 +125,9 @@ $(window).load(function() {
     var AJAX_init_parameters = {model_name: "CIFAR10" };
     $.get('/get_init_model_from_server', AJAX_init_parameters, function(data) {
         console.log("Received an init_model from server: \n" + data);
+
         init_model = data;
+        $("#newnet").val(init_model);
         eval(init_model);
         update_net_param_display();
 
@@ -639,9 +643,8 @@ var load_pretrained = function() {
     });
 }
 
-var change_net = function() {
-    eval(init_model);
-    reset_all();
+var get_random_number = function () {
+    return Math.floor((Math.random() * 100000) + 1);
 }
 
 var calculate_gradients = function() {
@@ -656,12 +659,9 @@ var post_net_to_server = function() {
     net_in_JSON_string = JSON.stringify(curr_net);
     var parameters = {model_name: "CIFAR10", net: net_in_JSON_string };
     console.log("Sending CIFAR10 net_in_JSON with length " + parameters.net.length);
+    console.log("Sending CIFAR10 net: " + parameters.net.substring(0,1000));
     $.post('/store_weights_on_server', parameters, function(data) {
-        console.log(data);
-        //var json = JSON.parse(data);
-        //net = new convnetjs.Net();
-        //net.fromJSON(json);
-        //reset_all();
+        //console.log(data);
     });
 }
 var get_batch_num_from_server = function() {
@@ -676,19 +676,14 @@ var get_net_and_batch_from_server = function() {
     var batch_num;
     $.get('/get_net_and_batch_from_server', parameters, function(data) {
         console.log("<get_net_and_batch_from_server> Received " + parameters.model_name + " net back");
-        console.log("<get_net_and_batch_from_server> Received " + data.net.length + " net in length back"); //DEBUG
-        console.log("\n=======\n<get_net_and_batch_from_server> Received the NET" + data.net.substring(0,500) + "\n"); //DEBUG
         console.log("<get_net_and_batch_from_server> Working on batch: " + data.batch_num); //DEBUG
+        console.log("<get_net_and_batch_from_server> Received " + data.net.length + " net in length back"); //DEBUG
+        console.log("<get_net_and_batch_from_server> Received the NET" + data.net.substring(0,1000)); //DEBUG
         //console.log("<get_net_from_server> Received the net: " + data.net);
 
         old_net = net.toJSON();
         net = new convnetjs.Net();
         net.fromJSON(JSON.parse(data.net));
-        //trainer = new convnetjs.SGDTrainer(net,{method:'adadelta', batch_size:4, l2_decay:0.0001});
-        //trainer.learning_rate = 0.0001;
-        //trainer.momentum = 0.9;
-        //trainer.batch_size = 2;
-        //trainer.l2_decay = 0.00001;
         reset_all();
         batch_num = data.batch_num;
     });
@@ -702,5 +697,26 @@ var get_model_from_server = function() {
         //net = new convnetjs.Net();
         //net.fromJSON(json);
         //reset_all();
+    });
+}
+var reset_model = function() {
+    var parameters = {model_name: "CIFAR10"};
+
+    $.post('/reset_model', parameters, function(data) {
+        console.log("Resetting the model named: <" + parameters.model_name + "> stored on server");
+    });
+}
+
+var change_net = function() {
+    eval($("#newnet").val());
+    reset_all();
+    curr_net = net.toJSON();
+    net_in_JSON_string = JSON.stringify(curr_net);
+    rand = get_random_number();
+    var parameters = {model_name: "CIFAR10",model_ID : rand, net: net_in_JSON_string };
+    console.log("Sending CIFAR10 net_in_JSON with length " + parameters.net.length);
+    console.log("Sending CIFAR10 net: " + parameters.net.substring(0,1000));
+    $.post('/store_new_model_on_server', parameters, function(data) {
+        console.log(data);
     });
 }
