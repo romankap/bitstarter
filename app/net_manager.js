@@ -2,8 +2,6 @@
  * Created by Roman on 05/07/2015.
  */
 
-var global_debug_counter=0;
-
 function isNumeric(num) {
     return !isNaN(num)
 }
@@ -18,7 +16,7 @@ module.exports = function (tot_batches) {
         batch_num++;
         batch_num = batch_num % total_batches;
 
-        console.log("<increase_batch_num> batch_num = " + batch_num + ". Total_batches = " + total_batches);
+        console.log("<increase_batch_num> new batch_num = " + batch_num + ". Total_batches = " + total_batches);
     };
 
     var gradients_calculator = {
@@ -30,6 +28,7 @@ module.exports = function (tot_batches) {
                 }
                 else if (gradient[i] !== null && typeof(gradient[i]) !== "object" &&
                         net_weight[i] !== null && typeof(net_weight[i]) !== "object" &&
+                        net_weight[i] !== NaN && gradient[i] !== NaN &&
                         isNumeric(i) ) {
                     net_weight[i] += gradient[i];
                 }
@@ -48,22 +47,25 @@ module.exports = function (tot_batches) {
             weights = JSON.stringify(weights_in_JSON);
         },
 
-        update_model_from_gradients: function(gradients_from_client) {
-            gradients = gradients_from_client;
-            gradients_in_JSON = JSON.parse(gradients);
+        update_model_from_gradients: function(model_from_client) {
+            trainer.learning_rate = model_from_client.learning_rate;
+            trainer.momentum = model_from_client.momentum;
+            trainer.l2_decay = model_from_client.l2_decay;
+
+            var gradients = model_from_client.net;
+            var gradients_in_JSON = JSON.parse(gradients);
             console.log("\n");
-            console.log("<Update model from gradients> Received the gradients" + gradients.substring(0, 500) + "\n");
-            console.log("<Update model from gradients> Current weights (BEFORE Update)" + weights.substring(0, 500) + "\n");
 
             add_gradients(weights_in_JSON, gradients_in_JSON);
             weights = JSON.stringify(weights_in_JSON);
-            console.log("<Update model from gradients> Current weights (After Update)" + weights.substring(0, 500) + "\n");
         },
 
         get_weights: function() {
             return weights;
         },
-
+        get_model_parameters: function() {
+            return params;
+        },
         get_batch_num: function () {
             return batch_num;
         },
@@ -73,8 +75,8 @@ module.exports = function (tot_batches) {
 
         get_and_update_batch_num: function () {
             var curr_batch = batch_num;
+            console.log("<get_and_update_batch_num> sending batch_num = " + curr_batch + ". Total_batches = " + total_batches);
             increase_batch_num();
-            console.log("<get_batch_num> batch_num = " + batch_num + ". Total_batches = " + total_batches);
             return curr_batch;
         },
         get_train_batch_num: function() {

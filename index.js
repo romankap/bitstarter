@@ -25,7 +25,6 @@ app.use(compress());
 app.set('port', (process.env.PORT || 8080));
 app.use(express.static(__dirname + '/public'));
 
-
 /////// =====================
 
 app.get('/', function(request, response) {
@@ -50,7 +49,8 @@ app.get('/admin', function(request, response){
 //==========================================
 
 app.get('/get_init_model_from_server', function(request, response){
-   response.send(cifar10.init_model);
+    var params = {init_model: cifar10.init_model, net : cifar10.net_manager.get_weights()};
+    response.send(params);
 });
 
 app.get('/get_net_and_update_batch_from_server', function(request, response){
@@ -58,16 +58,17 @@ app.get('/get_net_and_update_batch_from_server', function(request, response){
     var parameters = {net : cifar10.net_manager.get_weights(), batch_num: cifar10.net_manager.get_and_update_batch_num(), model_ID: curr_model_ID,
                         learning_rate : model_parameters.learning_rate , momentum : model_parameters.momentum , l2_decay: model_parameters .l2_decay};
     //parameters = {net : cifar10.net_manager.get_weights()};
-    console.log(" <get_net_and_update_batch_from_server> Sending the following net after `stringify`: " + parameters.net.substring(0, 1000));
+    //console.log(" <get_net_and_update_batch_from_server> Sending the following net after `stringify`: " + parameters.net.substring(0, 1000));
     response.send(parameters);
 });
+
 
 app.get('/get_net_and_batch_from_server', function(request, response){
     model_parameters = cifar10.net_manager.get_model_parameters();
     var parameters = {net : cifar10.net_manager.get_weights(), batch_num: cifar10.net_manager.get_batch_num(), model_ID: curr_model_ID,
         learning_rate : model_parameters.learning_rate , momentum : model_parameters.momentum , l2_decay: model_parameters .l2_decay};
     //parameters = {net : cifar10.net_manager.get_weights()};
-    console.log(" <get_net_and_batch_from_server> Sending the following net after `stringify`: " + parameters.net.substring(0, 1000));
+    //console.log(" <get_net_and_batch_from_server> Sending the following net after `stringify`: " + parameters.net.substring(0, 1000));
     response.send(parameters);
 });
 
@@ -109,7 +110,6 @@ app.get('*', function(request, response) {
     var index_buffer = new Buffer(fs.readFileSync("index.html"))
     response.send(index_buffer.toString())
 });
-
 
 app.listen(app.get('port'), function() {
   console.log("Node app is running at localhost:" + app.get('port'))

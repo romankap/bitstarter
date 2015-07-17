@@ -1,5 +1,4 @@
 var layer_defs, net, trainer;
-var old_net, curr_net;
 
 // ------------------------
 // BEGIN CIFAR10 SPECIFIC STUFF
@@ -8,50 +7,7 @@ var classes_txt = ['airplane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'hor
 
 var use_validation_data = true;
 
-var sample_training_instance = function () {
 
-    // find an unloaded batch
-    var bi = Math.floor(Math.random() * loaded_train_batches.length);
-    var b = loaded_train_batches[bi];
-    var k = Math.floor(Math.random() * 1000); // sample within the batch
-    var n = b * 1000 + k;
-
-    // load more batches over time
-    if(step_num%2000===0 && step_num>0) {
-        //var i = get_batch_num_from_server();
-        //load_data_batch(i);
-        for(var i=0;i<num_batches;i++) {
-            if(!loaded[i]) {
-                // load it
-                i = get_net_and_update_batch_from_server();
-                load_data_batch(i);
-                break; // okay for now
-            }
-        }
-    }
-
-    // fetch the appropriate row of the training image and reshape into a Vol
-    var p = img_data[b].data;
-    var x = new convnetjs.Vol(32,32,3,0.0);
-    var W = 32*32;
-    var j=0;
-    for(var dc=0;dc<3;dc++) {
-        var i=0;
-        for(var xc=0;xc<32;xc++) {
-            for(var yc=0;yc<32;yc++) {
-                var ix = ((W * k) + i) * 4 + dc;
-                x.set(yc,xc,dc,p[ix]/255.0-0.5);
-                i++;
-            }
-        }
-    }
-    var dx = Math.floor(Math.random()*5-2);
-    var dy = Math.floor(Math.random()*5-2);
-    x = convnetjs.augment(x, 32, dx, dy, Math.random()<0.5); //maybe flip horizontally
-
-    var isval = use_validation_data && n%10===0 ? true : false;
-    return {x:x, label:labels[n], isval:isval};
-}
 
 // sample a random testing instance
 var sample_test_instance = function() {
