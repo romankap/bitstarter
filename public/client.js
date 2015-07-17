@@ -501,7 +501,7 @@ var change_net = function() {
     rand = get_random_number();
     var parameters = {model_name: "CIFAR10",model_ID : rand, net: net_in_JSON_string };
     console.log("Sending CIFAR10 net_in_JSON with length " + parameters.net.length);
-    console.log("Sending CIFAR10 net: " + parameters.net.substring(0,1000));
+    //console.log("Sending CIFAR10 net: " + parameters.net.substring(0,1000));
     $.post('/store_new_model_on_server', parameters, function(data) {
         console.log(data);
     });

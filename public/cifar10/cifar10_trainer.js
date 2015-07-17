@@ -223,10 +223,7 @@ var calculate_gradients = function() {
 var post_gradients_to_server = function() {
     curr_net = net.toJSON();
     gradients_net = curr_net;
-    console.log("<post_gradients_to_server> curr_net.layers[1].filters[3].w[3]: " + curr_net.layers[1].filters[3].w[3]);
-    console.log("<post_gradients_to_server> old_net.layers[1].filters[3].w[3]: " + old_net.layers[1].filters[3].w[3]);
     calculate_gradients();
-    console.log("<post_gradients_to_server> gradients.layers[1].filters[3].w[3]: " + gradients_net.layers[1].filters[3].w[3]);
     var gradients_net_in_JSON_string = JSON.stringify(gradients_net);
     var learning_rate = trainer.learning_rate;
     var momentum = trainer.momentum;
@@ -267,10 +264,6 @@ var get_net_and_update_batch_from_server = function() {
         net.fromJSON(curr_net);
         reset_all();
         batch_num = data.batch_num;
-
-        console.log("<get_net_and_update_batch_from_server> Received Net.layers[1].filters[3].w[3]: " + net.toJSON().layers[1].filters[3].w[3]);
-        console.log("<get_net_and_update_batch_from_server> curr_net.layers[1].filters[3].w[3]: " + curr_net.layers[1].filters[3].w[3]);
-        console.log("<get_net_and_update_batch_from_server> old_net.layers[1].filters[3].w[3]: " + old_net.layers[1].filters[3].w[3]);
     });
     return batch_num;
 }
