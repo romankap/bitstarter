@@ -54,7 +54,6 @@ module.exports = function (tot_batches) {
 
             var gradients = model_from_client.net;
             var gradients_in_JSON = JSON.parse(gradients);
-            console.log("\n");
 
             add_gradients(weights_in_JSON, gradients_in_JSON);
             weights = JSON.stringify(weights_in_JSON);
@@ -64,6 +63,7 @@ module.exports = function (tot_batches) {
             return weights;
         },
         get_model_parameters: function() {
+            var params = {learning_rate: trainer.learning_rate, momentum: trainer.momentum, l2_decay: trainer.l2_decay };
             return params;
         },
         get_batch_num: function () {
