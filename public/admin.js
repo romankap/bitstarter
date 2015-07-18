@@ -1,5 +1,7 @@
 var layer_defs, net, trainer;
 var old_net, curr_net;
+var curr_model_ID;
+
 // ------------------------
 // BEGIN CIFAR10 SPECIFIC STUFF
 // ------------------------
@@ -20,11 +22,13 @@ var get_validations = false;
 $(window).load(function() {
     var AJAX_init_parameters = {model_name: "CIFAR10" };
     $.get('/get_init_model_from_server', AJAX_init_parameters, function(data) {
-        console.log("Received an init_model from server: \n" + data);
+        console.log("Received an init_model from server: \n" + data.init_model);
 
-        init_model = data;
+        init_model = data.init_model;
         $("#newnet").val(init_model);
         eval(init_model);
+        //net.fromJSON(JSON.parse(data.net));
+        reset_all();
         update_net_param_display();
 
         for(var k=0;k<loaded.length;k++) { loaded[k] = false; }
@@ -87,14 +91,15 @@ var get_net_and_batch_from_server = function() {
     return batch_num;
 }
 
-var get_model_from_server = function() {
+var get_net_and_batch_from_server = function() {
     var parameters = {model_name: "CIFAR10" };
-    $.get('/get_model_from_server', parameters, function(data) {
-        console.log(data);
-        //var json = JSON.parse(data);
-        //net = new convnetjs.Net();
-        //net.fromJSON(json);
-        //reset_all();
+    $.get('/get_net_and_batch_from_server', parameters, function(data) {
+        curr_model_ID  = data.model_ID;
+        console.log("<get_net_and_batch_from_server> Received "+ data.model_name + " model with model_ID: " + curr_model_ID);
+        var net_in_Json = JSON.parse(data.net);
+        net = new convnetjs.Net();
+        net.fromJSON(net_in_Json);
+        reset_all();
     });
 }
 
@@ -107,14 +112,11 @@ var reset_model = function() {
 }
 
 var change_net = function() {
-    eval($("#newnet").val());
+    var new_init_model = $("#newnet").val();
+    //rand = get_random_number();
+    var parameters = {model_name: "CIFAR10", new_init_model: new_init_model};
+    console.log("<change_net> Sending the following new CIFAR10 init_model: " + new_init_model);
     reset_all();
-    curr_net = net.toJSON();
-    net_in_JSON_string = JSON.stringify(curr_net);
-    rand = get_random_number();
-    var parameters = {model_name: "CIFAR10",model_ID : rand, net: net_in_JSON_string };
-    console.log("Sending CIFAR10 net_in_JSON with length " + parameters.net.length);
-    console.log("Sending CIFAR10 net: " + parameters.net.substring(0,1000));
     $.post('/store_new_model_on_server', parameters, function(data) {
         console.log(data);
     });

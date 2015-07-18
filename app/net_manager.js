@@ -6,17 +6,23 @@ function isNumeric(num) {
     return !isNaN(num)
 }
 
+function generate_random_number() {
+    return Math.floor((Math.random() * 100000) + 1);
+}
+
 module.exports = function (tot_batches) {
     var weights;
     var weights_in_JSON;
     var batch_num = 0;
     var total_batches = tot_batches;
+    var model_ID = 0;
+    var init_model;
 
     var increase_batch_num = function () {
         batch_num++;
         batch_num = batch_num % total_batches;
 
-        console.log("<increase_batch_num> new batch_num = " + batch_num + ". Total_batches = " + total_batches);
+        console.log("<increase_batch_num> NEW batch_num = " + batch_num + " (out of " + total_batches + ")");
     };
 
     var gradients_calculator = {
@@ -72,15 +78,27 @@ module.exports = function (tot_batches) {
         reset_batch_num: function () {
             batch_num = 0;
         },
+        generate_new_model_ID: function() {
+            model_ID = generate_random_number();
+        },
+        get_model_ID: function() {
+            return model_ID;
+        },
 
         get_and_update_batch_num: function () {
             var curr_batch = batch_num;
-            console.log("<get_and_update_batch_num> sending batch_num = " + curr_batch + ". Total_batches = " + total_batches);
+            console.log("<get_and_update_batch_num> sending batch_num = " + curr_batch + " (out of " + total_batches + ")");
             increase_batch_num();
             return curr_batch;
         },
         get_train_batch_num: function() {
             return total_batches - 1;
+        },
+        store_init_model: function(new_init_model) {
+            init_model = new_init_model;
+        },
+        get_init_model: function() {
+            return init_model;
         }
     };
 

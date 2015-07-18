@@ -1,5 +1,6 @@
 var layer_defs, net, trainer;
 var old_net, curr_net, gradients_net;
+var curr_model_ID = 0;
 
 var gradients_calculator = {
     traverse: function (new_net_property, old_net_property, prev_property) {
@@ -42,9 +43,9 @@ $(window).load(function() {
 
         init_model = data.init_model;
         eval(init_model);
-        curr_net = JSON.parse(data.net);
-        old_net = curr_net;
-        net.fromJSON(curr_net);
+        //curr_net = JSON.parse(data.net);
+        //old_net = curr_net;
+        //net.fromJSON(curr_net);
 
         reset_all();
         update_net_param_display();
@@ -228,12 +229,12 @@ var post_gradients_to_server = function() {
     var learning_rate = trainer.learning_rate;
     var momentum = trainer.momentum;
     var l2_decay = trainer.l2_decay;
-    var parameters = {model_name: "CIFAR10", net: gradients_net_in_JSON_string,
+    var parameters = {model_name: "CIFAR10", net: gradients_net_in_JSON_string, model_ID: curr_model_ID,
                       learning_rate :learning_rate, momentum: momentum, l2_decay: l2_decay };
     console.log("Sending CIFAR10 net_in_JSON with length " + parameters.net.length);
     //console.log("Sending CIFAR10 net: " + parameters.net.substring(0,1000));
     $.post('/update_model_from_gradients', parameters, function(data) {
-        //console.log("Sending CIFAR10 net: " + parameters.net.substring(0,1000));
+        console.log(data);
     });
 }
 var get_batch_num_from_server = function() {
@@ -247,7 +248,7 @@ var get_net_and_update_batch_from_server = function() {
     var parameters = {model_name: "CIFAR10"};
     var batch_num;
     $.get('/get_net_and_update_batch_from_server', parameters, function(data) {
-        console.log("<get_net_and_update_batch_from_server> Received " + parameters.model_name + " net back");
+        console.log("<get_net_and_update_batch_from_server> Received " + parameters.model_name + " net back. model_ID: " + data.model_ID);
         console.log("<get_net_and_update_batch_from_server> Working on batch: " + data.batch_num); //DEBUG
         console.log("<get_net_and_update_batch_from_server> Received " + data.net.length + " net in length back"); //DEBUG
         //console.log("<get_net_and_update_batch_from_server> Received the NET" + data.net.substring(0,1000)); //DEBUG
@@ -256,6 +257,7 @@ var get_net_and_update_batch_from_server = function() {
         trainer.learning_rate = data.learning_rate;
         trainer.momentum = data.momentum;
         trainer.l2_decay = data.l2_decay;
+        curr_model_ID  = data.model_ID;
 
         //old_net.fromJSON(net.toJSON());
         curr_net = JSON.parse(data.net);
