@@ -249,7 +249,7 @@ var get_batch_num_from_server = function() {
     });
 }
 var get_net_and_update_batch_from_server = function() {
-    var parameters = {model_name: "CIFAR10"};
+    var parameters = {model_name: "CIFAR10", client_ID: client_ID};
     var batch_num;
     $.get('/get_net_and_update_batch_from_server', parameters, function(data) {
         console.log("<get_net_and_update_batch_from_server> Received " + parameters.model_name + " net back. model_ID: " + data.model_ID);
