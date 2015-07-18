@@ -16,6 +16,7 @@ module.exports = function (tot_batches) {
     var batch_num = 0;
     var total_batches = tot_batches;
     var model_ID = 0;
+    var init_model;
 
     var increase_batch_num = function () {
         batch_num++;
@@ -92,6 +93,12 @@ module.exports = function (tot_batches) {
         },
         get_train_batch_num: function() {
             return total_batches - 1;
+        },
+        store_init_model: function(new_init_model) {
+            init_model = new_init_model;
+        },
+        get_init_model: function() {
+            return init_model;
         }
     };
 

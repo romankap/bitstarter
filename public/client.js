@@ -484,26 +484,3 @@ var get_batch_num_from_server = function() {
         return data.batch_num;
     });
 }
-
-
-var reset_model = function() {
-    var parameters = {model_name: "CIFAR10"};
-
-    $.post('/reset_model', parameters, function(data) {
-        console.log("Resetting the model named: <" + parameters.model_name + "> stored on server");
-    });
-}
-
-var change_net = function() {
-    eval($("#newnet").val());
-    reset_all();
-    curr_net = net.toJSON();
-    net_in_JSON_string = JSON.stringify(curr_net);
-    rand = get_random_number();
-    var parameters = {model_name: "CIFAR10",model_ID : rand, net: net_in_JSON_string };
-    console.log("Sending CIFAR10 net_in_JSON with length " + parameters.net.length);
-    //console.log("Sending CIFAR10 net: " + parameters.net.substring(0,1000));
-    $.post('/store_new_model_on_server', parameters, function(data) {
-        console.log(data);
-    });
-}

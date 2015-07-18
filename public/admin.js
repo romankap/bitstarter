@@ -112,14 +112,11 @@ var reset_model = function() {
 }
 
 var change_net = function() {
-    eval($("#newnet").val());
-    reset_all();
-    curr_net = net.toJSON();
-    net_in_JSON_string = JSON.stringify(curr_net);
+    var new_init_model = $("#newnet").val();
     //rand = get_random_number();
-    var parameters = {model_name: "CIFAR10", net: net_in_JSON_string };
-    console.log("Sending CIFAR10 net_in_JSON with length " + parameters.net.length);
-    console.log("Sending CIFAR10 net: " + parameters.net.substring(0,1000));
+    var parameters = {model_name: "CIFAR10", new_init_model: new_init_model};
+    console.log("<change_net> Sending the following new CIFAR10 init_model: " + new_init_model);
+    reset_all();
     $.post('/store_new_model_on_server', parameters, function(data) {
         console.log(data);
     });
