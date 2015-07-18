@@ -1,4 +1,5 @@
-var layer_defs, net, trainer;
+var net, trainer;
+
 
 // ------------------------
 // BEGIN CIFAR10 SPECIFIC STUFF
