@@ -85,7 +85,8 @@ app.post('/update_model_from_gradients', function(request, response){
     if (model_ID_from_client == cifar10.net_manager.get_model_ID()) {
         //Expecting to receive JSON of the form: {model_name: <model name>, net: <net in JSON>}
         var model_name = request.body.model_name;
-        console.log("<store_weights_on_server()> model_name: " + model_name + " with model_ID: " + model_ID_from_client);
+        console.log("<store_weights_on_server()> updating model_name: " + model_name + " with model_ID: " +
+                        model_ID_from_client + " from client " + request.body.client_ID);
         console.log("<store_weights_on_server()> net (in JSON) size: " + request.body.net.length);
         //console.log("<store_weights_on_server()> Received: " + request.body.net.substring(0, 1000));
 
