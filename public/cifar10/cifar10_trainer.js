@@ -178,7 +178,7 @@ var sample_training_instance = function () {
 
     // fetch the appropriate row of the training image and reshape into a Vol
     var p = img_data[b].data;
-    var x = new convnetjs.Vol(32,32,3,0.0);
+    var new_Vol = new convnetjs.Vol(32,32,3,0.0);
     var W = 32*32;
     var j=0;
     for(var dc=0;dc<3;dc++) {
@@ -186,17 +186,17 @@ var sample_training_instance = function () {
         for(var xc=0;xc<32;xc++) {
             for(var yc=0;yc<32;yc++) {
                 var ix = ((W * k) + i) * 4 + dc;
-                x.set(yc,xc,dc,p[ix]/255.0-0.5);
+                new_Vol.set(yc,xc,dc,p[ix]/255.0-0.5);
                 i++;
             }
         }
     }
     var dx = Math.floor(Math.random()*5-2);
     var dy = Math.floor(Math.random()*5-2);
-    x = convnetjs.augment(x, 32, dx, dy, Math.random()<0.5); //maybe flip horizontally
+    new_Vol = convnetjs.augment(new_Vol, 32, dx, dy, Math.random()<0.5); //maybe flip horizontally
 
     var isval = use_validation_data && n%10===0 ? true : false;
-    return {x:x, label:labels[n], isval:isval};
+    return {x:new_Vol, label:labels[n], isval:isval};
 }
 
 // loads a training image and trains on it with the network

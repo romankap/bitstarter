@@ -36,11 +36,11 @@ var update_displayed_batch_num = function(new_batch_num) {
 // sample a random testing instance
 var sample_test_instance = function() {
 
-    var b = test_batch;
-    var k = Math.floor(Math.random()*1000);
-    var n = b*1000+k;
+    var test_batch_num = test_batch;
+    var random_num = Math.floor(Math.random()*1000);
+    var random_test_sample_num = test_batch_num*1000+random_num;
 
-    var p = img_data[b].data;
+    var p = img_data[test_batch_num].data;
     var x = new convnetjs.Vol(32,32,3,0.0);
     var W = 32*32;
     var j=0;
@@ -48,7 +48,7 @@ var sample_test_instance = function() {
         var i=0;
         for(var xc=0;xc<32;xc++) {
             for(var yc=0;yc<32;yc++) {
-                var ix = ((W * k) + i) * 4 + dc;
+                var ix = ((W * random_num) + i) * 4 + dc;
                 x.set(yc,xc,dc,p[ix]/255.0-0.5);
                 i++;
             }
@@ -56,17 +56,17 @@ var sample_test_instance = function() {
     }
 
     // distort position and maybe flip
-    var xs = [];
-    //xs.push(x, 32, 0, 0, false); // push an un-augmented copy
+    var distorted_sample = [];
+    //distorted_sample.push(x, 32, 0, 0, false); // push an un-augmented copy
     for(var k=0;k<6;k++) {
         var dx = Math.floor(Math.random()*5-2);
         var dy = Math.floor(Math.random()*5-2);
-        xs.push(convnetjs.augment(x, 32, dx, dy, k>2));
+        distorted_sample.push(convnetjs.augment(x, 32, dx, dy, k>2));
     }
 
     // return multiple augmentations, and we will average the network over them
     // to increase performance
-    return {x:xs, label:labels[n]};
+    return {x:distorted_sample, label:labels[random_test_sample_num]};
 }
 
 var num_batches = 51; // 50 training batches, 1 test
@@ -378,7 +378,7 @@ var test_predict = function() {
     // grab a random test image
     for(num=0;num<4;num++) {
         var sample = sample_test_instance();
-        var y = sample.label;  // ground truth label
+        var sample_label = sample.label;  // ground truth label
 
         // forward prop it through the network
         var aavg = new convnetjs.Vol(1,1,num_classes,0.0);
@@ -393,7 +393,7 @@ var test_predict = function() {
         for(var k=0;k<aavg.w.length;k++) { preds.push({k:k,p:aavg.w[k]}); }
         preds.sort(function(a,b){return a.p<b.p ? 1:-1;});
 
-        var correct = preds[0].k===y;
+        var correct = preds[0].k===sample_label;
         if(correct) num_correct++;
         num_total++;
 
@@ -408,7 +408,7 @@ var test_predict = function() {
         div.className = 'probsdiv';
         var t = '';
         for(var k=0;k<3;k++) {
-            var col = preds[k].k===y ? 'rgb(85,187,85)' : 'rgb(187,85,85)';
+            var col = preds[k].k===sample_label ? 'rgb(85,187,85)' : 'rgb(187,85,85)';
             t += '<div class=\"pp\" style=\"width:' + Math.floor(preds[k].p/n*100) + 'px; margin-left: 70px; background-color:' + col + ';\">' + classes_txt[preds[k].k] + '</div>'
         }
         probsdiv.innerHTML = t;
