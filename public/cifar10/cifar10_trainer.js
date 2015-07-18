@@ -204,7 +204,7 @@ var paused = true;
 
 var compute = function() {
     paused = !paused;
-    var btn = $('#start-computing-btn');
+    var btn = document.getElementById('compute-btn');
     if (paused) {
         btn.value = 'compute';
         post_gradients_to_server();

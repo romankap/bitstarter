@@ -55,22 +55,16 @@
     <h2 id="client-name" class="" >Hello</h2>
     <h3 id="batch-num" class="color-green" ></h3>
     <div class="secpart col-sm-push-1 col-sm-4">
-      <input id="start-computing-btn" type="submit" value="compute" onclick="compute();" class="btn btn-large btn-success start-working-btn"/>
-      <div id="trainstats"></div>
+      <input id="compute-btn" type="submit" value="compute" onclick="compute();" class="btn btn-large btn-success start-working-btn"/>
+      <table id="trainstats"></table>
 
-      <div id="controls">
-        Learning rate: <input name="lri" type="text" maxlength="20" id="lr_input"/>
-        <br />
-
-        Momentum: <input name="momi" type="text" maxlength="20" id="momentum_input"/>
-        <br />
-
-        Batch size: <input name="bsi" type="text" maxlength="20" id="batch_size_input"/>
-        <br />
-
-        Weight decay: <input name="wdi" type="text" maxlength="20" id="decay_input"/>
-      </div>
-    </div>
+      <table id="controls">
+        <tr><td>Learning rate: </td><td> <input name="lri" type="text" maxlength="20" id="lr_input"/></td></tr>
+        <tr><td>Momentum: </td><td><input name="momi" type="text" maxlength="20" id="momentum_input"/></td></tr>
+        <tr><td>Batch size: </td><td><input name="bsi" type="text" maxlength="20" id="batch_size_input"/></td></tr>
+        <tr><td>Weight decay: </td><td><input name="wdi" type="text" maxlength="20" id="decay_input"/></td></tr>
+        <!--input id="buttonwd" type="submit" value="change" onclick="change_decay();"/-->
+      </table>
 
     <div class="secpart hide">
       <div class="col-sm-4">
