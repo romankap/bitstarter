@@ -33,11 +33,15 @@ function isNumeric(num) {
     return !isNaN(num)
 }
 
+
 var init_model;
 
 // int main
 $(window).load(function() {
     var AJAX_init_parameters = {model_name: "CIFAR10" };
+    client_ID = make_string_ID();
+    change_client_name();
+    console.log("Hello, I am trainer-client " + client_ID);
     $.get('/get_init_model_from_server', AJAX_init_parameters, function(data) {
         console.log("Received an init_model from server: \n" + data.init_model);
 
@@ -200,7 +204,7 @@ var paused = true;
 
 var compute = function() {
     paused = !paused;
-    var btn = document.getElementById('buttontp');
+    var btn = document.getElementById('compute-btn');
     if (paused) {
         btn.value = 'compute';
         post_gradients_to_server();
@@ -230,7 +234,7 @@ var post_gradients_to_server = function() {
     var momentum = trainer.momentum;
     var l2_decay = trainer.l2_decay;
     var parameters = {model_name: "CIFAR10", net: gradients_net_in_JSON_string, model_ID: curr_model_ID,
-                      learning_rate :learning_rate, momentum: momentum, l2_decay: l2_decay };
+                    client_ID: client_ID ,learning_rate :learning_rate, momentum: momentum, l2_decay: l2_decay };
     console.log("Sending CIFAR10 net_in_JSON with length " + parameters.net.length);
     //console.log("Sending CIFAR10 net: " + parameters.net.substring(0,1000));
     $.post('/update_model_from_gradients', parameters, function(data) {
@@ -253,6 +257,8 @@ var get_net_and_update_batch_from_server = function() {
         console.log("<get_net_and_update_batch_from_server> Received " + data.net.length + " net in length back"); //DEBUG
         //console.log("<get_net_and_update_batch_from_server> Received the NET" + data.net.substring(0,1000)); //DEBUG
         //console.log("<get_net_from_server> Received the net: " + data.net);
+        batch_num = data.batch_num;
+        update_displayed_batch_num(batch_num);
 
         trainer.learning_rate = data.learning_rate;
         trainer.momentum = data.momentum;
@@ -265,7 +271,6 @@ var get_net_and_update_batch_from_server = function() {
         net = new convnetjs.Net();
         net.fromJSON(curr_net);
         reset_all();
-        batch_num = data.batch_num;
     });
     return batch_num;
 }

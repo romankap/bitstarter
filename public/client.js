@@ -1,5 +1,5 @@
 var net, trainer;
-
+var client_ID;
 
 // ------------------------
 // BEGIN CIFAR10 SPECIFIC STUFF
@@ -8,6 +8,29 @@ var classes_txt = ['airplane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'hor
 
 var use_validation_data = true;
 
+var make_string_ID = function ()
+{
+    var text = "";
+    var consonants = "AEIOU";
+    var vowels = "BCDFGJKLMNPQRSTVWYZ";
+
+    for( var i=0; i < 4; i++ ) {
+        if (i % 2 == 0)
+            text += vowels.charAt(Math.floor(Math.random() * vowels.length));
+        else
+            text += consonants.charAt(Math.floor(Math.random() * consonants.length));
+    }
+
+    return text;
+}
+
+var change_client_name = function() {
+    $('#client-name').html("Hello trainer-client " + client_ID);
+}
+
+var update_displayed_batch_num = function(new_batch_num) {
+    $('#batch-num').html("Training on batch #" + new_batch_num);
+}
 
 
 // sample a random testing instance

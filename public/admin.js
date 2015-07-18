@@ -1,6 +1,6 @@
 var layer_defs, net, trainer;
 var old_net, curr_net;
-var curr_model_ID;
+var curr_model_ID, curr_batch_num;
 
 // ------------------------
 // BEGIN CIFAR10 SPECIFIC STUFF
@@ -9,7 +9,7 @@ var classes_txt = ['airplane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'hor
 
 var use_validation_data = true;
 var first_execution = true;
-var validation_frequency = 5 * 1000;
+var validation_frequency = 2 * 1000;
 var prediction_interval;
 var get_validations = false;
 
@@ -64,9 +64,11 @@ var get_batch_num_from_server = function() {
     var parameters = {model_name: "CIFAR10" };
     $.get('/get_batch_num_from_server', parameters, function(data) {
         console.log("<get_batch_num_from_server> Starting to work on batch_num: " + data.batch_num);
+        curr_batch_num = data.batch_num;
         return data.batch_num;
     });
 }
+/*
 var get_net_and_batch_from_server = function() {
     var parameters = {model_name: "CIFAR10"};
     var batch_num;
@@ -76,6 +78,8 @@ var get_net_and_batch_from_server = function() {
         console.log("<get_net_and_batch_from_server> Received " + data.net.length + " net in length back"); //DEBUG
         console.log("<get_net_and_batch_from_server> Received the NET" + data.net.substring(0,1000)); //DEBUG
         //console.log("<get_net_from_server> Received the net: " + data.net);
+        batch_num = data.batch_num;
+        update_displayed_batch_num(batch_num);
 
         old_net = net.toJSON();
         net = new convnetjs.Net();
@@ -89,17 +93,26 @@ var get_net_and_batch_from_server = function() {
         update_net_param_display();
     });
     return batch_num;
-}
+}*/
 
 var get_net_and_batch_from_server = function() {
     var parameters = {model_name: "CIFAR10" };
     $.get('/get_net_and_batch_from_server', parameters, function(data) {
         curr_model_ID  = data.model_ID;
-        console.log("<get_net_and_batch_from_server> Received "+ data.model_name + " model with model_ID: " + curr_model_ID);
+        console.log("<get_net_and_batch_from_server> Received "+ parameters.model_name + " model with model_ID: " + curr_model_ID);
+
         var net_in_Json = JSON.parse(data.net);
         net = new convnetjs.Net();
         net.fromJSON(net_in_Json);
         reset_all();
+
+        curr_batch_num = data.batch_num;
+        update_displayed_batch_num(curr_batch_num);
+
+        var vis_elt = document.getElementById("visnet");
+        visualize_activations(net, vis_elt);
+        test_predict();
+        update_net_param_display();
     });
 }
 
