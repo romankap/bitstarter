@@ -52,18 +52,12 @@
 <div class="container">
     <div class="row-fluid heading">
         <div class="col-sm-12 text-center">
-            <h2 class="top-headline">Click to test model's performance</h2>
-            <button id="test-model-btn" class="btn btn-large btn-success start-computing-btn" onclick="get_model_from_server();">Test net</button>
-            <button id="store-model-btn" class="btn btn-large btn-success start-computing-btn" onclick="post_model_to_server();">Send net</button>
-            <button id="reset-model-btn" class="btn btn-large btn-success start-computing-btn" onclick="reset_model();">Reset the net</button>
-            <!--<div id="trainstats"></div>-->
-        </div>
-        <div class="col-sm-12 text-center">
             <h2 ><a href="http://cs.stanford.edu/people/karpathy/convnetjs/">ConvNetJS</a> MNIST demo</h2>
-
+            <h3 id="batch-num" class="color-green" ></h3>
             <h1 class="convnet-headline">Training Stats</h1>
+
             <div class="secpart col-sm-push-1 col-sm-4">
-                <input id="toggle-validate-btn" type="submit" value="Start Validation" onclick="toggle_validate();" class="btn btn-large btn-success start-computing-btn"/>
+                <input id="toggle-validate-btn" type="submit" value="Start Validation" onclick="toggle_validate();" class="btn btn-large btn-success start-working-btn"/>
 
                 <div id="trainstats"></div>
 
@@ -94,6 +88,12 @@
                 </div>
             </div>
             <div style="clear:both;"></div>
+
+            <div class="col-sm-12 text-center margin-bottom-30">
+                <h1 class="convnet-headline">Click to reset net's weights</h1>
+                <button id="reset-model-btn" class="btn btn-large btn-danger start-computing-btn margin-top-15" onclick="reset_model();">Reset the net</button>
+                <!--<div id="trainstats"></div>-->
+            </div>
 
             <h1 class="convnet-headline">Instantiate a Network and Trainer</h1>
             <div>

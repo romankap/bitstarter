@@ -204,7 +204,7 @@ var paused = true;
 
 var compute = function() {
     paused = !paused;
-    var btn = document.getElementById('buttontp');
+    var btn = $('#start-computing-btn');
     if (paused) {
         btn.value = 'compute';
         post_gradients_to_server();
@@ -257,6 +257,8 @@ var get_net_and_update_batch_from_server = function() {
         console.log("<get_net_and_update_batch_from_server> Received " + data.net.length + " net in length back"); //DEBUG
         //console.log("<get_net_and_update_batch_from_server> Received the NET" + data.net.substring(0,1000)); //DEBUG
         //console.log("<get_net_from_server> Received the net: " + data.net);
+        batch_num = data.batch_num;
+        update_displayed_batch_num(batch_num);
 
         trainer.learning_rate = data.learning_rate;
         trainer.momentum = data.momentum;
@@ -269,8 +271,6 @@ var get_net_and_update_batch_from_server = function() {
         net = new convnetjs.Net();
         net.fromJSON(curr_net);
         reset_all();
-        batch_num = data.batch_num;
-        update_displayed_batch_num(batch_num);
     });
     return batch_num;
 }

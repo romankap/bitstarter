@@ -9,7 +9,7 @@ var classes_txt = ['airplane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'hor
 
 var use_validation_data = true;
 var first_execution = true;
-var validation_frequency = 5 * 1000;
+var validation_frequency = 2 * 1000;
 var prediction_interval;
 var get_validations = false;
 
@@ -76,6 +76,8 @@ var get_net_and_batch_from_server = function() {
         console.log("<get_net_and_batch_from_server> Received " + data.net.length + " net in length back"); //DEBUG
         console.log("<get_net_and_batch_from_server> Received the NET" + data.net.substring(0,1000)); //DEBUG
         //console.log("<get_net_from_server> Received the net: " + data.net);
+        batch_num = data.batch_num;
+        update_displayed_batch_num(batch_num);
 
         old_net = net.toJSON();
         net = new convnetjs.Net();
