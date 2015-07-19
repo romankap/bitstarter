@@ -29,8 +29,8 @@
 
     <script src="cifar10/cifar10_labels.js"></script>
     <!--<script type="text/javascript" src="jquery.import_js.js"></script>-->
-    <script src="admin.js"></script>
     <script src="client.js"></script>
+    <script src="admin.js"></script>
 
 </head>
 
@@ -80,6 +80,10 @@
             </div>
             <div style="clear:both;"></div>
 
+            <h3 id="testset_acc"></h3>
+
+
+
             <div class="col-sm-12 text-center margin-bottom-30">
                 <h1 class="convnet-headline">Click to reset net's weights</h1>
                 <button id="reset-model-btn" class="btn btn-large btn-danger start-computing-btn margin-top-15" onclick="reset_model();">Reset the net</button>
@@ -99,7 +103,6 @@
 
             <div class="divsec">
                 <h1>Example predictions on Test set</h1>
-                <div id="testset_acc"></div>
             </div>
 
         </div>
@@ -110,13 +113,5 @@
 <!--[if lt IE 9]>
 <script src="assets/plugins/respond.js"></script>
 <![endif]-->
-<script>
-//    $('#start-computing-btn').click(function() {
-//        $.ajax({
-//            type: "POST"
-//            //Continue from here
-//        });
-//    });
-</script>
 </body>
 </html>	

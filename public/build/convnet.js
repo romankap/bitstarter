@@ -293,7 +293,7 @@ var convnetjs = convnetjs || { REVISION: 'ALPHA' };
     return W;
   }
 
-  // img is a DOM element that contains a loaded image
+  // img is a DOM element that contains a is_batch_loaded image
   // returns a Vol of size (W, H, 4). 4 is for RGBA
   var img_to_vol = function(img, convert_grayscale) {
 
