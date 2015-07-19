@@ -80,15 +80,9 @@
             </div>
             <div style="clear:both;"></div>
 
-            <div class="divsec">
-                <h1>Network Visualization</h1>
-                <div id="visnet"></div>
-            </div>
+            <h3 id="testset_acc"></h3>
 
-            <div class="divsec">
-                <h1>Example predictions on Test set</h1>
-                <div id="testset_acc"></div>
-            </div>
+
 
             <div class="col-sm-12 text-center margin-bottom-30">
                 <h1 class="convnet-headline">Click to reset net's weights</h1>
@@ -102,6 +96,14 @@
                 <input id="buttonnn" type="submit" value="change network" onclick="change_net();" style="width:200px;height:30px;"/>
             </div>
 
+            <div class="divsec">
+                <h1>Network Visualization</h1>
+                <div id="visnet"></div>
+            </div>
+
+            <div class="divsec">
+                <h1>Example predictions on Test set</h1>
+            </div>
 
         </div>
     </div>
@@ -111,13 +113,5 @@
 <!--[if lt IE 9]>
 <script src="assets/plugins/respond.js"></script>
 <![endif]-->
-<script>
-//    $('#start-computing-btn').click(function() {
-//        $.ajax({
-//            type: "POST"
-//            //Continue from here
-//        });
-//    });
-</script>
 </body>
 </html>	

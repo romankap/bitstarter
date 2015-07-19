@@ -55,6 +55,9 @@ var validate_batch = function() {
     //step(sample, curr_sample_num); // process this image
 
     test_predict();
+    var vis_elt = document.getElementById("visnet");
+    visualize_activations(net, vis_elt);
+    update_net_param_display();
 }
 
 var start_validating = function() {
@@ -172,9 +175,9 @@ var test_predict = function() {
         }
     }
     testAccWindow.add(num_correct/num_total);
-    $("#testset_acc").text('test accuracy based on last 200 test images: ' + testAccWindow.get_average());
-    console.log("num_correct: " + num_correct + " | num_total: " + num_total);
-    console.log('test accuracy : ' + testAccWindow.get_average());
+    $("#testset_acc").text('average validation accuracy: ' + testAccWindow.get_average().toFixed(2));
+    //console.log("num_correct: " + num_correct + " | num_total: " + num_total);
+    //console.log('test accuracy : ' + testAccWindow.get_average().toFixed(2));
 }
 
 
