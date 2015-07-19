@@ -15,6 +15,11 @@ var classes_txt = ['airplane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'hor
 
 var use_validation_data = true;
 
+// Returns a random number in the range: [0, max_num-1]
+var get_random_number = function (max_num) {
+    return Math.floor((Math.random() * max_num));
+}
+
 var make_string_ID = function ()
 {
     var text = "";
@@ -39,7 +44,7 @@ var update_displayed_batch_num = function(new_batch_num) {
     $('#batch-num').html("Training on batch #" + new_batch_num);
 }
 
-var load_data_batch = function() {
+var load_data_batch = function(batch_to_load) {
     // Load the dataset with JS in background
     is_batch_loaded = false;
     data_img_elt = new Image();
@@ -53,9 +58,9 @@ var load_data_batch = function() {
         data_ctx.drawImage(data_img_elt, 0, 0); // copy it over... bit wasteful :(
         img_data = data_ctx.getImageData(0, 0, data_img_elt.width, data_img_elt.height);
         is_batch_loaded = true;
-        console.log('finished loading data batch ' + curr_batch_num);
+        console.log('finished loading data batch ' + batch_to_load);
     }
-    data_img_elt.src = "https://s3.eu-central-1.amazonaws.com/bitstarter-dl/cifar10/cifar10_batch_" + curr_batch_num + ".png";
+    data_img_elt.src = "https://s3.eu-central-1.amazonaws.com/bitstarter-dl/cifar10/cifar10_batch_" + batch_to_load + ".png";
 }
 
 // ------------------------
@@ -310,62 +315,6 @@ var visualize_activations = function(net, elt) {
 
 
 
-// evaluate current network on test set
-var test_predict = function() {
-    var num_classes = net.layers[net.layers.length-1].out_depth;
-
-    document.getElementById('testset_acc').innerHTML = '';
-    var num_total = 0;
-    var num_correct = 0;
-
-    // grab a random test image
-    for(num=0;num<4;num++) {
-        var sample = sample_test_instance();
-        var sample_label = sample.label;  // ground truth label
-
-        // forward prop it through the network
-        var aavg = new convnetjs.Vol(1,1,num_classes,0.0);
-        // ensures we always have a list, regardless if above returns single item or list
-        var xs = [].concat(sample.x);
-        var n = xs.length;
-        for(var i=0;i<n;i++) {
-            var a = net.forward(xs[i]);
-            aavg.addFrom(a);
-        }
-        var preds = [];
-        for(var k=0;k<aavg.w.length;k++) { preds.push({k:k,p:aavg.w[k]}); }
-        preds.sort(function(a,b){return a.p<b.p ? 1:-1;});
-
-        var correct = preds[0].k===sample_label;
-        if(correct) num_correct++;
-        num_total++;
-
-        var div = document.createElement('div');
-        div.className = 'testdiv';
-
-        // draw the image into a canvas
-        draw_activations_COLOR(div, xs[0], 2); // draw Vol into canv
-
-        // add predictions
-        var probsdiv = document.createElement('div');
-        div.className = 'probsdiv';
-        var t = '';
-        for(var k=0;k<3;k++) {
-            var col = preds[k].k===sample_label ? 'rgb(85,187,85)' : 'rgb(187,85,85)';
-            t += '<div class=\"pp\" style=\"width:' + Math.floor(preds[k].p/n*100) + 'px; margin-left: 70px; background-color:' + col + ';\">' + classes_txt[preds[k].k] + '</div>'
-        }
-        probsdiv.innerHTML = t;
-        div.appendChild(probsdiv);
-
-        // add it into DOM
-        $(div).prependTo($("#testset_vis")).hide().fadeIn('slow').slideDown('slow');
-        if($(".probsdiv").length>200) {
-            $("#testset_vis > .probsdiv").last().remove(); // pop to keep upper bound of shown items
-        }
-    }
-    testAccWindow.add(num_correct/num_total);
-    $("#testset_acc").text('test accuracy based on last 200 test images: ' + testAccWindow.get_average());
-}
 
 var lossGraph = new cnnvis.Graph();
 var xLossWindow = new cnnutil.Window(100);
@@ -439,9 +388,6 @@ var load_pretrained = function() {
     });
 }
 
-var get_random_number = function () {
-    return Math.floor((Math.random() * 100000) + 1);
-}
 
 
 var get_batch_num_from_server = function() {

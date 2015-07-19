@@ -25,7 +25,6 @@ app.use(express.static(__dirname + '/public'));
 
 /////// =====================
 
-
 app.get('/', function(request, response) {
     //fs.readFileSync("index.html");
     var index_buffer = new Buffer(fs.readFileSync("index.html"))

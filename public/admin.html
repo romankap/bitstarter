@@ -29,8 +29,8 @@
 
     <script src="cifar10/cifar10_labels.js"></script>
     <!--<script type="text/javascript" src="jquery.import_js.js"></script>-->
-    <script src="admin.js"></script>
     <script src="client.js"></script>
+    <script src="admin.js"></script>
 
 </head>
 
@@ -80,6 +80,16 @@
             </div>
             <div style="clear:both;"></div>
 
+            <div class="divsec">
+                <h1>Network Visualization</h1>
+                <div id="visnet"></div>
+            </div>
+
+            <div class="divsec">
+                <h1>Example predictions on Test set</h1>
+                <div id="testset_acc"></div>
+            </div>
+
             <div class="col-sm-12 text-center margin-bottom-30">
                 <h1 class="convnet-headline">Click to reset net's weights</h1>
                 <button id="reset-model-btn" class="btn btn-large btn-danger start-computing-btn margin-top-15" onclick="reset_model();">Reset the net</button>
@@ -92,15 +102,6 @@
                 <input id="buttonnn" type="submit" value="change network" onclick="change_net();" style="width:200px;height:30px;"/>
             </div>
 
-            <div class="divsec">
-                <h1>Network Visualization</h1>
-                <div id="visnet"></div>
-            </div>
-
-            <div class="divsec">
-                <h1>Example predictions on Test set</h1>
-                <div id="testset_acc"></div>
-            </div>
 
         </div>
     </div>
