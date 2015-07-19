@@ -1,6 +1,9 @@
 var layer_defs, net, trainer;
 var old_net, curr_net, gradients_net;
-var curr_model_ID = 0;
+var samples_in_batch = 1000;
+var curr_model_ID = 0, curr_sample_num=-1;
+var is_net_loaded_from_server = false, is_training_active = false;
+var train_on_batch_interval;
 
 var gradients_calculator = {
     traverse: function (new_net_property, old_net_property, prev_property) {
@@ -21,12 +24,10 @@ var gradients_calculator = {
     }
 }
 
-var debug_global_counter;
 // ------------------------
 // BEGIN CIFAR10 SPECIFIC STUFF
 // ------------------------
 var classes_txt = ['airplane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck'];
-var step_num=0;
 var use_validation_data = true;
 
 function isNumeric(num) {
@@ -42,6 +43,7 @@ $(window).load(function() {
     client_ID = make_string_ID();
     change_client_name();
     console.log("Hello, I am trainer-client " + client_ID);
+    /*
     $.get('/get_init_model_from_server', AJAX_init_parameters, function(data) {
         console.log("Received an init_model from server: \n" + data.init_model);
 
@@ -54,20 +56,40 @@ $(window).load(function() {
         reset_all();
         update_net_param_display();
 
-        for(var k=0;k<loaded.length;k++) { loaded[k] = false; }
+        for(var k=0;k<is_batch_loaded.length;k++) { is_batch_loaded[k] = false; }
 
-        load_data_batch(0); // async load train set batch 0 (6 total train batches)
-        load_data_batch(test_batch); // async load test set (batch 6)
-        start_working();
+        //load_data_batch(0); // async load train set batch 0 (6 total train batches)
+        //load_data_batch(test_batch); // async load test set (batch 6)
+        //start_working();
     });
+    */
 });
 
-var start_working = function() {
-    if(loaded[0] && loaded[test_batch]) {
-        console.log('Good to go!');
-        setInterval(load_and_step, 0); // lets go!
+// loads a training image and trains on it with the network
+var load_and_step_interval;
+
+var train_on_batch = function() {
+    if (is_training_active) {
+        var sample = sample_training_instance(curr_sample_num);
+        step(sample, curr_sample_num); // process this image
+        curr_sample_num++
+        if(curr_sample_num === 1000) {
+            post_gradients_to_server();
+            clearInterval(train_on_batch_interval);
+        }
     }
-    else { setTimeout(start_fun, 200); } // keep checking
+}
+
+var start_working = function() {
+    if (is_net_loaded_from_server && is_batch_loaded) {
+        is_training_active = true;
+        curr_sample_num = 0;
+        train_on_batch_interval = setInterval(train_on_batch, 0);
+        console.log('Starting to work!');
+    }
+    else {
+        setTimeout(start_working, 200);
+    }
 }
 
 var lossGraph = new cnnvis.Graph();
@@ -77,19 +99,45 @@ var trainAccWindow = new cnnutil.Window(100);
 var valAccWindow = new cnnutil.Window(100);
 var testAccWindow = new cnnutil.Window(50, 1);
 
-var step = function(sample) {
+var sample_training_instance = function (sample_num) {
+
+    // fetch the appropriate row of the training image and reshape into a Vol
+    var p = img_data.data;
+    var new_Vol = new convnetjs.Vol(32,32,3,0.0);
+    var W = 32*32;
+    var j=0;
+    for(var dc=0;dc<3;dc++) {
+        var i=0;
+        for(var xc=0;xc<32;xc++) {
+            for(var yc=0;yc<32;yc++) {
+                var ix = ((W * sample_num) + i) * 4 + dc;
+                new_Vol.set(yc,xc,dc,p[ix]/255.0-0.5);
+                i++;
+            }
+        }
+    }
+    var dx = Math.floor(Math.random()*5-2);
+    var dy = Math.floor(Math.random()*5-2);
+    new_Vol = convnetjs.augment(new_Vol, 32, dx, dy, Math.random()<0.5); //maybe flip horizontally
+
+    //var isval = use_validation_data && sample_num%10===0 ? true : false;
+    var label_num = curr_batch_num * samples_in_batch + sample_num;
+    return {x:new_Vol, label:labels[label_num]};
+}
+
+var step = function(sample, sample_num) {
 
     var x = sample.x;
     var y = sample.label;
 
-    if(sample.isval) {
+    /*if(sample.isval) {
         // use x to build our estimate of validation error
         net.forward(x);
         var yhat = net.getPrediction();
         var val_acc = yhat === y ? 1.0 : 0.0;
         valAccWindow.add(val_acc);
         return; // get out
-    }
+    }*/
 
     // train on it with network
     var stats = trainer.train(x, y);
@@ -124,18 +172,18 @@ var step = function(sample) {
     var t = 'Validation accuracy: ' + f2t(valAccWindow.get_average());
     train_elt.appendChild(document.createTextNode(t));
     train_elt.appendChild(document.createElement('br'));
-    var t = 'Examples seen: ' + step_num;
+    var t = 'Examples seen: ' + sample_num;
     train_elt.appendChild(document.createTextNode(t));
     train_elt.appendChild(document.createElement('br'));
 
     // visualize activations
-    if(step_num % 100 === 0) {
+    if(sample_num % 100 === 0) {
         var vis_elt = document.getElementById("visnet");
         visualize_activations(net, vis_elt);
     }
 
     // log progress to graph, (full loss)
-    if(step_num % 200 === 0) {
+    if(sample_num % 200 === 0) {
         var xa = xLossWindow.get_average();
         var xw = wLossWindow.get_average();
         if(xa >= 0 && xw >= 0) { // if they are -1 it means not enough data was accumulated yet for estimates
@@ -145,58 +193,12 @@ var step = function(sample) {
     }
 
     // run prediction on test set
-    if((step_num % 100 === 0 && step_num > 0) || step_num===100) {
-        test_predict();
-        // post gradients to server
-        post_gradients_to_server();
-        get_net_and_update_batch_from_server();
-    }
-    step_num++;
-}
-
-var sample_training_instance = function () {
-
-    // find an unloaded batch
-    var bi = Math.floor(Math.random() * loaded_train_batches.length);
-    var b = loaded_train_batches[bi];
-    var k = Math.floor(Math.random() * 1000); // sample within the batch
-    var n = b * 1000 + k;
-
-    // load more batches over time
-    if(step_num%2000===0 && step_num>0) {
-        //var i = get_batch_num_from_server();
-        //load_data_batch(i);
-        for(var i=0;i<num_batches;i++) {
-            if(!loaded[i]) {
-                // load it
-                //i = get_net_and_update_batch_from_server();
-                load_data_batch(i);
-                break; // okay for now
-            }
-        }
-    }
-
-    // fetch the appropriate row of the training image and reshape into a Vol
-    var p = img_data[b].data;
-    var new_Vol = new convnetjs.Vol(32,32,3,0.0);
-    var W = 32*32;
-    var j=0;
-    for(var dc=0;dc<3;dc++) {
-        var i=0;
-        for(var xc=0;xc<32;xc++) {
-            for(var yc=0;yc<32;yc++) {
-                var ix = ((W * k) + i) * 4 + dc;
-                new_Vol.set(yc,xc,dc,p[ix]/255.0-0.5);
-                i++;
-            }
-        }
-    }
-    var dx = Math.floor(Math.random()*5-2);
-    var dy = Math.floor(Math.random()*5-2);
-    new_Vol = convnetjs.augment(new_Vol, 32, dx, dy, Math.random()<0.5); //maybe flip horizontally
-
-    var isval = use_validation_data && n%10===0 ? true : false;
-    return {x:new_Vol, label:labels[n], isval:isval};
+    //if((step_num % 1000 === 0 && step_num > 0) || step_num===100) {
+    //    test_predict();
+    //    // post gradients to server
+    //    post_gradients_to_server();
+    //    get_net_and_update_batch_from_server();
+    //}
 }
 
 // loads a training image and trains on it with the network
@@ -207,11 +209,15 @@ var compute = function() {
     var btn = document.getElementById('compute-btn');
     if (paused) {
         btn.value = 'compute';
+        is_training_active = false;
+        clearInterval(train_on_batch_interval);
         post_gradients_to_server();
     }
     else {
         btn.value = 'pause';
-        get_net_and_update_batch_from_server();
+        is_net_loaded_from_server = false;
+        is_batch_loaded = false;
+        get_net_and_update_batch_from_server(); //calls start_working();
     }
 }
 
@@ -226,6 +232,8 @@ var calculate_gradients = function() {
 }
 
 var post_gradients_to_server = function() {
+    is_training_active = false;
+
     curr_net = net.toJSON();
     gradients_net = curr_net;
     calculate_gradients();
@@ -240,7 +248,13 @@ var post_gradients_to_server = function() {
     $.post('/update_model_from_gradients', parameters, function(data) {
         console.log(data);
     });
+
+    is_net_loaded_from_server = false;
+    is_batch_loaded = false;
+    if (!paused)
+        get_net_and_update_batch_from_server();
 }
+
 var get_batch_num_from_server = function() {
     var parameters = {model_name: "CIFAR10" };
     $.get('/get_batch_num_from_server', parameters, function(data) {
@@ -248,29 +262,35 @@ var get_batch_num_from_server = function() {
         return data.batch_num;
     });
 }
+
 var get_net_and_update_batch_from_server = function() {
     var parameters = {model_name: "CIFAR10", client_ID: client_ID};
-    var batch_num;
+    //var batch_num;
     $.get('/get_net_and_update_batch_from_server', parameters, function(data) {
-        console.log("<get_net_and_update_batch_from_server> Received " + parameters.model_name + " net back. model_ID: " + data.model_ID);
-        console.log("<get_net_and_update_batch_from_server> Working on batch: " + data.batch_num); //DEBUG
-        console.log("<get_net_and_update_batch_from_server> Received " + data.net.length + " net in length back"); //DEBUG
-        //console.log("<get_net_and_update_batch_from_server> Received the NET" + data.net.substring(0,1000)); //DEBUG
-        //console.log("<get_net_from_server> Received the net: " + data.net);
-        batch_num = data.batch_num;
-        update_displayed_batch_num(batch_num);
+        curr_batch_num = data.batch_num;
+        load_data_batch(curr_batch_num);
 
-        trainer.learning_rate = data.learning_rate;
-        trainer.momentum = data.momentum;
-        trainer.l2_decay = data.l2_decay;
-        curr_model_ID  = data.model_ID;
+        update_displayed_batch_num(curr_batch_num);
 
         //old_net.fromJSON(net.toJSON());
         curr_net = JSON.parse(data.net);
         old_net = curr_net;
         net = new convnetjs.Net();
         net.fromJSON(curr_net);
+        trainer = new convnetjs.SGDTrainer(net, {method:'adadelta', batch_size:4, l2_decay:0.0001});
+
+        trainer.learning_rate = data.learning_rate;
+        trainer.momentum = data.momentum;
+        trainer.l2_decay = data.l2_decay;
+        curr_model_ID  = data.model_ID;
+
         reset_all();
+
+        is_net_loaded_from_server = true;
+
+        console.log("<get_net_and_update_batch_from_server> Received " + parameters.model_name + " net back. model_ID: " + data.model_ID);
+        console.log("<get_net_and_update_batch_from_server> Working on batch: " + data.batch_num); //DEBUG
+        console.log("<get_net_and_update_batch_from_server> Received " + data.net.length + " net in length back"); //DEBUG
     });
-    return batch_num;
+    start_working();
 }

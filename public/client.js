@@ -1,6 +1,13 @@
 var net, trainer;
-var client_ID;
+var client_ID, curr_batch_num=-1;
+var num_batches = 51; // 50 training batches, 1 test
+var test_batch = 50;
+var data_img_elt; //TODO: make this a single element instead of an array
+var img_data// = new Array(num_batches);
 
+var is_batch_loaded;// = new Array(num_batches);
+//var loaded_train_batch = [];
+var init_model;
 // ------------------------
 // BEGIN CIFAR10 SPECIFIC STUFF
 // ------------------------
@@ -32,78 +39,21 @@ var update_displayed_batch_num = function(new_batch_num) {
     $('#batch-num').html("Training on batch #" + new_batch_num);
 }
 
-
-// sample a random testing instance
-var sample_test_instance = function() {
-
-    var test_batch_num = test_batch;
-    var random_num = Math.floor(Math.random()*1000);
-    var random_test_sample_num = test_batch_num*1000+random_num;
-
-    var p = img_data[test_batch_num].data;
-    var x = new convnetjs.Vol(32,32,3,0.0);
-    var W = 32*32;
-    var j=0;
-    for(var dc=0;dc<3;dc++) {
-        var i=0;
-        for(var xc=0;xc<32;xc++) {
-            for(var yc=0;yc<32;yc++) {
-                var ix = ((W * random_num) + i) * 4 + dc;
-                x.set(yc,xc,dc,p[ix]/255.0-0.5);
-                i++;
-            }
-        }
-    }
-
-    // distort position and maybe flip
-    var distorted_sample = [];
-    //distorted_sample.push(x, 32, 0, 0, false); // push an un-augmented copy
-    for(var k=0;k<6;k++) {
-        var dx = Math.floor(Math.random()*5-2);
-        var dy = Math.floor(Math.random()*5-2);
-        distorted_sample.push(convnetjs.augment(x, 32, dx, dy, k>2));
-    }
-
-    // return multiple augmentations, and we will average the network over them
-    // to increase performance
-    return {x:distorted_sample, label:labels[random_test_sample_num]};
-}
-
-var num_batches = 51; // 50 training batches, 1 test
-var test_batch = 50;
-var data_img_elts = new Array(num_batches);
-var img_data = new Array(num_batches);
-var loaded = new Array(num_batches);
-var loaded_train_batches = [];
-var init_model;
-
-
-
-var start_fun = function() {
-    if(loaded[0] && loaded[test_batch]) {
-        console.log('Good to go!');
-        setInterval(load_and_step, 0); // lets go!
-    }
-    else { setTimeout(start_fun, 200); } // keep checking
-}
-
-var load_data_batch = function(batch_num) {
+var load_data_batch = function() {
     // Load the dataset with JS in background
-    data_img_elts[batch_num] = new Image();
-    var data_img_elt = data_img_elts[batch_num];
-    data_img_elts[batch_num].crossOrigin = 'anonymous';
+    data_img_elt = new Image();
+    data_img_elt.crossOrigin = 'anonymous';
     data_img_elt.onload = function() {
         var data_canvas = document.createElement('canvas');
         data_canvas.width = data_img_elt.width;
         data_canvas.height = data_img_elt.height;
         var data_ctx = data_canvas.getContext("2d");
         data_ctx.drawImage(data_img_elt, 0, 0); // copy it over... bit wasteful :(
-        img_data[batch_num] = data_ctx.getImageData(0, 0, data_canvas.width, data_canvas.height);
-        loaded[batch_num] = true;
-        if(batch_num < test_batch) { loaded_train_batches.push(batch_num); }
-        console.log('finished loading data batch ' + batch_num);
-    };
-    data_img_elt.src = "https://s3.eu-central-1.amazonaws.com/bitstarter-dl/cifar10/cifar10_batch_" + batch_num + ".png";
+        img_data = data_ctx.getImageData(0, 0, data_img_elt.width, data_img_elt.height);
+        is_batch_loaded = true;
+        console.log('finished loading data batch ' + curr_batch_num);
+    }
+    data_img_elt.src = "https://s3.eu-central-1.amazonaws.com/bitstarter-dl/cifar10/cifar10_batch_" + curr_batch_num + ".png";
 }
 
 // ------------------------
@@ -356,16 +306,7 @@ var visualize_activations = function(net, elt) {
     }
 }
 
-// loads a training image and trains on it with the network
-var paused = true;
-var load_and_step = function() {
-    if(paused) return;
 
-    var sample = sample_training_instance();
-    step(sample); // process this image
-
-    //setTimeout(load_and_step, 0); // schedule the next iteration
-}
 
 // evaluate current network on test set
 var test_predict = function() {
@@ -430,6 +371,7 @@ var wLossWindow = new cnnutil.Window(100);
 var trainAccWindow = new cnnutil.Window(100);
 var valAccWindow = new cnnutil.Window(100);
 var testAccWindow = new cnnutil.Window(50, 1);
+
 
 // user settings 
 var change_lr = function() {

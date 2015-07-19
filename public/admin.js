@@ -31,7 +31,7 @@ $(window).load(function() {
         reset_all();
         update_net_param_display();
 
-        for(var k=0;k<loaded.length;k++) { loaded[k] = false; }
+        is_batch_loaded = false;
 
         load_data_batch(0); // async load train set batch 0 (6 total train batches)
         load_data_batch(test_batch); // async load test set (batch 6)
@@ -68,32 +68,43 @@ var get_batch_num_from_server = function() {
         return data.batch_num;
     });
 }
-/*
-var get_net_and_batch_from_server = function() {
-    var parameters = {model_name: "CIFAR10"};
-    var batch_num;
-    $.get('/get_net_and_batch_from_server', parameters, function(data) {
-        console.log("<get_net_and_batch_from_server> Received " + parameters.model_name + " net back");
-        console.log("<get_net_and_batch_from_server> Working on batch: " + data.batch_num); //DEBUG
-        console.log("<get_net_and_batch_from_server> Received " + data.net.length + " net in length back"); //DEBUG
-        console.log("<get_net_and_batch_from_server> Received the NET" + data.net.substring(0,1000)); //DEBUG
-        //console.log("<get_net_from_server> Received the net: " + data.net);
-        batch_num = data.batch_num;
-        update_displayed_batch_num(batch_num);
 
-        old_net = net.toJSON();
-        net = new convnetjs.Net();
-        net.fromJSON(JSON.parse(data.net));
-        reset_all();
-        batch_num = data.batch_num;
+// sample a random testing instance
+var sample_test_instance = function() {
 
-        var vis_elt = document.getElementById("visnet");
-        visualize_activations(net, vis_elt);
-        test_predict();
-        update_net_param_display();
-    });
-    return batch_num;
-}*/
+    var test_batch_num = test_batch;
+    var random_num = Math.floor(Math.random()*1000);
+    var random_test_sample_num = test_batch_num*1000+random_num;
+
+    var p = img_data.data;
+    var x = new convnetjs.Vol(32,32,3,0.0);
+    var W = 32*32;
+    var j=0;
+    for(var dc=0;dc<3;dc++) {
+        var i=0;
+        for(var xc=0;xc<32;xc++) {
+            for(var yc=0;yc<32;yc++) {
+                var ix = ((W * random_num) + i) * 4 + dc;
+                x.set(yc,xc,dc,p[ix]/255.0-0.5);
+                i++;
+            }
+        }
+    }
+
+    // distort position and maybe flip
+    var distorted_sample = [];
+    //distorted_sample.push(x, 32, 0, 0, false); // push an un-augmented copy
+    for(var k=0;k<6;k++) {
+        var dx = Math.floor(Math.random()*5-2);
+        var dy = Math.floor(Math.random()*5-2);
+        distorted_sample.push(convnetjs.augment(x, 32, dx, dy, k>2));
+    }
+
+    // return multiple augmentations, and we will average the network over them
+    // to increase performance
+    return {x:distorted_sample, label:labels[random_test_sample_num]};
+}
+
 
 var get_net_and_batch_from_server = function() {
     var parameters = {model_name: "CIFAR10" };
