@@ -41,8 +41,10 @@ var update_displayed_batch_num = function(new_batch_num) {
 
 var load_data_batch = function() {
     // Load the dataset with JS in background
+    is_batch_loaded = false;
     data_img_elt = new Image();
     data_img_elt.crossOrigin = 'anonymous';
+
     data_img_elt.onload = function() {
         var data_canvas = document.createElement('canvas');
         data_canvas.width = data_img_elt.width;

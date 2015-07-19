@@ -34,35 +34,11 @@ function isNumeric(num) {
     return !isNaN(num)
 }
 
-
-var init_model;
-
 // int main
 $(window).load(function() {
-    var AJAX_init_parameters = {model_name: "CIFAR10" };
     client_ID = make_string_ID();
     change_client_name();
     console.log("Hello, I am trainer-client " + client_ID);
-    /*
-    $.get('/get_init_model_from_server', AJAX_init_parameters, function(data) {
-        console.log("Received an init_model from server: \n" + data.init_model);
-
-        init_model = data.init_model;
-        eval(init_model);
-        //curr_net = JSON.parse(data.net);
-        //old_net = curr_net;
-        //net.fromJSON(curr_net);
-
-        reset_all();
-        update_net_param_display();
-
-        for(var k=0;k<is_batch_loaded.length;k++) { is_batch_loaded[k] = false; }
-
-        //load_data_batch(0); // async load train set batch 0 (6 total train batches)
-        //load_data_batch(test_batch); // async load test set (batch 6)
-        //start_working();
-    });
-    */
 });
 
 // loads a training image and trains on it with the network
@@ -89,6 +65,23 @@ var start_working = function() {
     }
     else {
         setTimeout(start_working, 200);
+    }
+}
+
+var paused = true;
+
+var compute = function() {
+    paused = !paused;
+    var btn = document.getElementById('compute-btn');
+    if (paused) {
+        btn.value = 'compute';
+        is_training_active = false;
+        clearInterval(train_on_batch_interval);
+        post_gradients_to_server();
+    }
+    else {
+        btn.value = 'pause';
+        get_net_and_update_batch_from_server(); //calls start_working();
     }
 }
 
@@ -172,7 +165,7 @@ var step = function(sample, sample_num) {
     var t = 'Validation accuracy: ' + f2t(valAccWindow.get_average());
     train_elt.appendChild(document.createTextNode(t));
     train_elt.appendChild(document.createElement('br'));
-    var t = 'Examples seen: ' + sample_num;
+    var t = 'Examples seen (out of '+ samples_in_batch + "): " + sample_num;
     train_elt.appendChild(document.createTextNode(t));
     train_elt.appendChild(document.createElement('br'));
 
@@ -202,24 +195,6 @@ var step = function(sample, sample_num) {
 }
 
 // loads a training image and trains on it with the network
-var paused = true;
-
-var compute = function() {
-    paused = !paused;
-    var btn = document.getElementById('compute-btn');
-    if (paused) {
-        btn.value = 'compute';
-        is_training_active = false;
-        clearInterval(train_on_batch_interval);
-        post_gradients_to_server();
-    }
-    else {
-        btn.value = 'pause';
-        is_net_loaded_from_server = false;
-        is_batch_loaded = false;
-        get_net_and_update_batch_from_server(); //calls start_working();
-    }
-}
 
 
 var calculate_gradients = function() {
@@ -249,8 +224,6 @@ var post_gradients_to_server = function() {
         console.log(data);
     });
 
-    is_net_loaded_from_server = false;
-    is_batch_loaded = false;
     if (!paused)
         get_net_and_update_batch_from_server();
 }
@@ -266,6 +239,7 @@ var get_batch_num_from_server = function() {
 var get_net_and_update_batch_from_server = function() {
     var parameters = {model_name: "CIFAR10", client_ID: client_ID};
     //var batch_num;
+    is_net_loaded_from_server = false;
     $.get('/get_net_and_update_batch_from_server', parameters, function(data) {
         curr_batch_num = data.batch_num;
         load_data_batch(curr_batch_num);
