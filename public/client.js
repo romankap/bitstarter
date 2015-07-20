@@ -26,7 +26,7 @@ var make_string_ID = function ()
     var consonants = "AEIOU";
     var vowels = "BCDFGJKLMNPQRSTVWYZ";
 
-    for( var i=0; i < 4; i++ ) {
+    for( var i=0; i < 5; i++ ) {
         if (i % 2 == 0)
             text += vowels.charAt(Math.floor(Math.random() * vowels.length));
         else
@@ -38,6 +38,7 @@ var make_string_ID = function ()
 
 var change_client_name = function() {
     $('#client-name').html("Hello trainer-client " + client_ID);
+    $('#client-name-explanation').html("(" + client_ID + " is your identifying name in the crowdcomputing network)");
 }
 
 var update_displayed_batch_num = function(new_batch_num) {

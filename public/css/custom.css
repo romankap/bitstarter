@@ -137,3 +137,7 @@ p {
 .points {
 	margin-top: 100px;
 }
+
+.color-green {
+    color: green;
+}
