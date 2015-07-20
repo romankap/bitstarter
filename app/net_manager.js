@@ -11,15 +11,18 @@ function generate_random_number() {
 }
 
 module.exports = function (tot_batches) {
-    var weights;
-    var weights_in_JSON;
-    var batch_num = 0;
     var total_batches = tot_batches;
-    var model_ID = 0;
-    var init_model;
+    var weights, weights_in_JSON;
+    var batch_num = 0;
+    var model_ID = 0, init_model;
+    var epochs_count = 0;
+    var clients_dict = {}, total_different_clients=0, last_contributing_client = "<no client>";
 
     var increase_batch_num = function () {
         batch_num++;
+        if (batch_num === total_batches)
+            epochs_count++;
+
         batch_num = batch_num % total_batches;
 
         console.log("<increase_batch_num> NEW batch_num = " + batch_num + " (out of " + total_batches + ")");
@@ -46,6 +49,20 @@ module.exports = function (tot_batches) {
         gradients_calculator.traverse(weights_in_JSON, gradients_in_JSON, "");
     };
 
+    var check_if_in_clients_dict = function(client_name) {
+        if (clients_dict[client_name] !== true) {
+            return false;
+        }
+        return true;
+    };
+    var insert_to_clients_dict = function(client_name)   {
+        if (!check_if_in_clients_dict(client_name)) {
+            clients_dict[client_name] = true;
+            total_different_clients++;
+        }
+        last_contributing_client = client_name;
+    };
+
     var functions = {
 
         store_weights: function(weights_in_JSON_to_store) {
@@ -63,6 +80,7 @@ module.exports = function (tot_batches) {
 
             add_gradients(weights_in_JSON, gradients_in_JSON);
             weights = JSON.stringify(weights_in_JSON);
+            insert_to_clients_dict(model_from_client.client_ID);
         },
 
         get_weights: function() {
@@ -75,8 +93,12 @@ module.exports = function (tot_batches) {
         get_batch_num: function () {
             return batch_num;
         },
-        reset_batch_num: function () {
+        get_epochs_count: function () {
+            return epochs_count;
+        },
+        reset_batch_num_and_epochs_count: function () {
             batch_num = 0;
+            epochs_count = 0;
         },
         generate_new_model_ID: function() {
             model_ID = generate_random_number();
@@ -99,7 +121,19 @@ module.exports = function (tot_batches) {
         },
         get_init_model: function() {
             return init_model;
+        },
+        get_different_clients_num : function() {
+            return total_different_clients;
+        },
+        get_last_contributing_client : function() {
+            return last_contributing_client;
+        },
+        clear_clients_dict : function () {
+            clients_dict = {};
+            total_different_clients = 0;
+            last_contributing_client = "<no client>";
         }
+
     };
 
     return functions;

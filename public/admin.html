@@ -53,9 +53,10 @@
     <div class="row-fluid heading">
         <div class="col-sm-12 text-center">
             <h2 ><a href="http://cs.stanford.edu/people/karpathy/convnetjs/">ConvNetJS</a> MNIST demo</h2>
-            <h3 id="batch-num" class="color-green" ></h3>
             <h1 class="convnet-headline">Training Stats</h1>
 
+            <h3 id="batch-num" class="color-green" ></h3>
+            <h3 id="total-clients" class="color-green" ></h3>
             <div class="secpart col-sm-push-1 col-sm-4">
                 <input id="toggle-validate-btn" type="submit" value="Start Validation" onclick="toggle_validate();" class="btn btn-large btn-success start-working-btn"/>
 
@@ -81,8 +82,6 @@
             <div style="clear:both;"></div>
 
             <h3 id="testset_acc"></h3>
-
-
 
             <div class="col-sm-12 text-center margin-bottom-30">
                 <h1 class="convnet-headline">Click to reset net's weights</h1>

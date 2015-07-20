@@ -56,7 +56,7 @@ var validate_batch = function() {
 
     test_predict();
     var vis_elt = document.getElementById("visnet");
-    visualize_activations(net, vis_elt);
+    //visualize_activations(net, vis_elt);
     update_net_param_display();
 }
 
@@ -76,6 +76,7 @@ var toggle_validate = function () {
 
     if (get_validations) {
         validation_interval = setInterval(test_prediction_accuracy, validation_frequency);
+        test_prediction_accuracy();
         btn.value = 'Stop Validating';
         start_validating();
     }
@@ -83,6 +84,15 @@ var toggle_validate = function () {
         clearInterval(validation_interval);
         clearInterval(validate_batch_interval);
         btn.value = 'Start Validating';
+    }
+}
+
+////////////////////////////////////////////
+
+var update_contributing_clients = function(total_different_clients, last_contributing_client) {
+    if (total_different_clients != undefined && last_contributing_client != undefined && total_different_clients > 0) {
+        $('#total-clients').html("total different clients: " + total_different_clients +
+                                " , last contributing client: " + last_contributing_client);
     }
 }
 
@@ -209,7 +219,8 @@ var get_net_and_batch_from_server = function() {
         reset_all();
 
         curr_batch_num = (data.batch_num-1) % validation_batch_num;
-        update_displayed_batch_num(curr_batch_num);
+        update_displayed_batch_and_epoch_nums(curr_batch_num, data.epoch_num);
+        update_contributing_clients(data.total_different_clients, data.last_contributing_client);
 
         //var vis_elt = document.getElementById("visnet");
 

@@ -54,6 +54,7 @@ app.get('/get_init_model_from_server', function(request, response){
 app.get('/get_net_and_update_batch_from_server', function(request, response){
     var model_parameters = cifar10.net_manager.get_model_parameters();
     var parameters = {net : cifar10.net_manager.get_weights(), batch_num: cifar10.net_manager.get_and_update_batch_num(),
+                        epoch_num: cifar10.net_manager.get_epochs_count(),
                         model_ID: cifar10.net_manager.get_model_ID(),learning_rate : model_parameters.learning_rate ,
                         momentum : model_parameters.momentum , l2_decay: model_parameters .l2_decay};
     //parameters = {net : cifar10.net_manager.get_weights()};
@@ -65,8 +66,11 @@ app.get('/get_net_and_update_batch_from_server', function(request, response){
 app.get('/get_net_and_batch_from_server', function(request, response){
     var model_parameters = cifar10.net_manager.get_model_parameters();
     var parameters = {net : cifar10.net_manager.get_weights(), batch_num: cifar10.net_manager.get_batch_num(),
+                        epoch_num: cifar10.net_manager.get_epochs_count(),
                         model_ID: cifar10.net_manager.get_model_ID(),learning_rate : model_parameters.learning_rate,
-                        momentum : model_parameters.momentum , l2_decay: model_parameters .l2_decay};
+                        momentum : model_parameters.momentum , l2_decay: model_parameters .l2_decay,
+                        total_different_clients: cifar10.net_manager.get_different_clients_num(),
+                        last_contributing_client: cifar10.net_manager.get_last_contributing_client()};
     //parameters = {net : cifar10.net_manager.get_weights()};
     response.send(parameters);
     console.log(" <get_net_and_batch_from_server> sent net with model_ID: " + parameters.model_ID + " to Admin");

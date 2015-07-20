@@ -29,7 +29,8 @@ cifar10_manager.store_init_model(cifar10_init_model);
 var reset_model =  function () {
     eval(cifar10_manager.get_init_model());
     cifar10_manager.store_weights(net.toJSON());
-    cifar10_manager.reset_batch_num();
+    cifar10_manager.reset_batch_num_and_epochs_count();
+    cifar10_manager.clear_clients_dict();
     cifar10_manager.generate_new_model_ID();
 };
 

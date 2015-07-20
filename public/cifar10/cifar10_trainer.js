@@ -162,9 +162,9 @@ var step = function(sample, sample_num) {
     var t = 'Training accuracy: ' + f2t(trainAccWindow.get_average());
     train_elt.appendChild(document.createTextNode(t));
     train_elt.appendChild(document.createElement('br'));
-    var t = 'Validation accuracy: ' + f2t(valAccWindow.get_average());
-    train_elt.appendChild(document.createTextNode(t));
-    train_elt.appendChild(document.createElement('br'));
+    //var t = 'Validation accuracy: ' + f2t(valAccWindow.get_average());
+    //train_elt.appendChild(document.createTextNode(t));
+    //train_elt.appendChild(document.createElement('br'));
     var t = 'Examples seen (out of '+ samples_in_batch + "): " + sample_num;
     train_elt.appendChild(document.createTextNode(t));
     train_elt.appendChild(document.createElement('br'));
@@ -242,9 +242,10 @@ var get_net_and_update_batch_from_server = function() {
     is_net_loaded_from_server = false;
     $.get('/get_net_and_update_batch_from_server', parameters, function(data) {
         curr_batch_num = data.batch_num;
+        curr_epoch_num = data.epoch_num;
         load_data_batch(curr_batch_num);
 
-        update_displayed_batch_num(curr_batch_num);
+        update_displayed_batch_and_epoch_nums(curr_batch_num, curr_epoch_num);
 
         //old_net.fromJSON(net.toJSON());
         curr_net = JSON.parse(data.net);
