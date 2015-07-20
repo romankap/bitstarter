@@ -88,10 +88,9 @@ app.post('/update_model_from_gradients', function(request, response){
                         model_ID_from_client + " from client " + request.body.client_ID);
         console.log("<store_weights_on_server()> net (in JSON) size: " + request.body.net.length);
         //console.log("<store_weights_on_server()> Received: " + request.body.net.substring(0, 1000));
+        response.send("Stored " + model_name + " weights on Node.js server");
 
         cifar10.net_manager.update_model_from_gradients(request.body);
-
-        response.send("Stored " + model_name + " weights on Node.js server");
     }
     else {
         response.send("<update_model_from_gradients> Old model_ID, gradients were discarded ");
