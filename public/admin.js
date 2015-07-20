@@ -232,7 +232,15 @@ var get_net_and_batch_from_server = function() {
     });
 }
 
-
+var get_all_stats = function() {
+    var parameters = {model_name: "CIFAR10" };
+    $.get('/get_all_stats', parameters, function(data) {
+        console.log("<get_all_stats> Received the following stats: " + data.stats_in_csv)
+        $('#download-stats-csv').attr("href", "data:text/csv;charset=utf-8," + data.stats_in_csv);
+        $('#download-stats-csv').attr("download", "stats.csv");
+        $('#download-stats-csv').show();
+    });
+}
 
 var reset_model = function() {
     var parameters = {model_name: "CIFAR10"};

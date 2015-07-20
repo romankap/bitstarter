@@ -2,6 +2,22 @@
     color: #fff;
 }
 
+.color-green {
+    color: green;
+}
+
+.color-blue {
+    color: blue;
+}
+
+.float-left {
+    float: left;
+}
+
+.text-align-left {
+    text-align: left;
+}
+
 .margin-top-10 {
   margin-top: 10px;
 }
@@ -136,12 +152,4 @@ p {
 
 .points {
 	margin-top: 100px;
-}
-
-.color-green {
-    color: green;
-}
-
-.color-blue {
-    color: blue;
 }

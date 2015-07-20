@@ -56,13 +56,19 @@
             <h1 class="convnet-headline">Training Stats</h1>
 
             <h3 id="batch-num" class="color-green" ></h3>
-            <h3 id="total-clients" class="color-green" ></h3>
-            <div class="secpart col-sm-push-1 col-sm-4">
+            <h4 id="total-clients" class="color-green" ></h4>
+
+            <div class="col-sm-12">
+                <input id="get-all-stats-btn" type="submit" value="Get all stats" onclick="get_all_stats();" class="btn btn-large btn-success"/>
+                <a id="download-stats-csv" class="btn btn-large btn-success" style="display: none;">Download stats</a>
+            </div>
+            <div class="secpart col-sm-12">
                 <input id="toggle-validate-btn" type="submit" value="Start Validation" onclick="toggle_validate();" class="btn btn-large btn-success start-working-btn"/>
+
 
                 <div id="trainstats"></div>
 
-                <table id="controls">
+                <table id="controls" class="text-align-left">
                     <tr><td>Learning rate: </td>  <td> <input name="lri" type="text" maxlength="20" id="lr_input"/></td></tr>
                     <tr><td>Momentum: </td>  <td><input name="momi" type="text" maxlength="20" id="momentum_input"/></td></tr>
                     <tr><td>Batch size: </td>  <td><input name="bsi" type="text" maxlength="20" id="batch_size_input"/></td></tr>
@@ -70,15 +76,7 @@
                     <!--input id="buttonwd" type="submit" value="change" onclick="change_decay();"/-->
                 </table>
             </div>
-            <div class="secpart">
-                <div class="col-sm-4">
-                    Loss:<br />
-                    <canvas id="lossgraph">
-                    </canvas>
-                    <br />
-                    <input id="buttoncg" type="submit" value="clear graph" onclick="clear_graph();"/>
-                </div>
-            </div>
+
             <div style="clear:both;"></div>
 
             <h3 id="testset_acc"></h3>

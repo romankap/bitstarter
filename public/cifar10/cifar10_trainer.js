@@ -32,8 +32,8 @@ var gradients_calculator = {
 var reset_stats = function() {
     fw_timings_sum = fw_timings_num = 0;
     bw_timings_sum = bw_timings_num = 0;
-    latency_to_server = post_to_server_start = post_to_server_end = 0;
-    latency_from_server = get_from_server_start = get_from_server_end = 0;
+    post_to_server_start = post_to_server_end = -1;
+    get_from_server_start = get_from_server_end = -1;
 }
 
 var add_to_fw_and_bw_timing_stats = function(fw_time, bw_time) {
@@ -200,6 +200,7 @@ var calculate_gradients = function() {
 
 var post_gradients_to_server = function() {
     is_training_active = false;
+    post_to_server_start = new Date().getTime();
 
     curr_net = net.toJSON();
     gradients_net = curr_net;
@@ -208,13 +209,19 @@ var post_gradients_to_server = function() {
     var learning_rate = trainer.learning_rate;
     var momentum = trainer.momentum;
     var l2_decay = trainer.l2_decay;
+
+    //Also sending previous latency to server
     var parameters = {model_name: "CIFAR10", net: gradients_net_in_JSON_string, model_ID: curr_model_ID,
                     client_ID: client_ID ,learning_rate :learning_rate, momentum: momentum, l2_decay: l2_decay,
-                    fw_timings_average: get_fw_timings_average(), bw_timings_average: get_bw_timings_average()};
+                    fw_timings_average: get_fw_timings_average().toFixed(2), bw_timings_average: get_bw_timings_average().toFixed(2),
+                    latency_to_server: latency_to_server};
     console.log("Sending CIFAR10 net_in_JSON with length " + parameters.net.length);
     //console.log("Sending CIFAR10 net: " + parameters.net.substring(0,1000));
     $.post('/update_model_from_gradients', parameters, function(data) {
         console.log(data);
+        post_to_server_end = new Date().getTime();
+        latency_to_server = post_to_server_end - post_to_server_start;
+        console.log("<post_gradients_to_server> Sending latency_to_server: " + latency_to_server);
     });
 
     if (!paused)
@@ -230,9 +237,13 @@ var get_batch_num_from_server = function() {
 }
 
 var get_net_and_update_batch_from_server = function() {
-    var parameters = {model_name: "CIFAR10", client_ID: client_ID};
-    //var batch_num;
+    get_from_server_start = new Date().getTime();
+
+    //Sending previous latency from server
+    var parameters = {model_name: "CIFAR10", client_ID: client_ID, latency_from_server: latency_from_server};
+    console.log("<get_net_and_update_batch_from_server> Sending latency_from_server: " + latency_from_server);
     is_net_loaded_from_server = false;
+
     $.get('/get_net_and_update_batch_from_server', parameters, function(data) {
         curr_batch_num = data.batch_num;
         curr_epoch_num = data.epoch_num;
@@ -253,10 +264,13 @@ var get_net_and_update_batch_from_server = function() {
         curr_model_ID  = data.model_ID;
 
         reset_all();
-        reset_stats();
 
         is_net_loaded_from_server = true;
 
+        get_from_server_end = new Date().getTime();
+        latency_from_server = get_from_server_end - get_from_server_start;
+
+        reset_stats();
         console.log("<get_net_and_update_batch_from_server> Received " + parameters.model_name + " net back. model_ID: " + data.model_ID);
         console.log("<get_net_and_update_batch_from_server> Working on batch: " + data.batch_num); //DEBUG
         console.log("<get_net_and_update_batch_from_server> Received " + data.net.length + " net in length back"); //DEBUG

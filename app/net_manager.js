@@ -1,6 +1,8 @@
 /**
  * Created by Roman on 05/07/2015.
  */
+//var os = require('os');
+
 
 function isNumeric(num) {
     return !isNaN(num)
@@ -17,6 +19,11 @@ module.exports = function (tot_batches) {
     var model_ID = 0, init_model;
     var epochs_count = 0;
     var clients_dict = {}, total_different_clients=0, last_contributing_client = "<no client>";
+
+    var fw_timings = new Array(), fw_timings_sum=0;
+    var bw_timings = new Array(), bw_timings_sum=0;
+    var latencies_to_server = new Array(), latencies_to_server_sum=0;
+    var latencies_from_server = new Array(), latencies_from_server_sum=0;
 
     var increase_batch_num = function () {
         batch_num++;
@@ -62,6 +69,22 @@ module.exports = function (tot_batches) {
         }
         last_contributing_client = client_name;
     };
+
+    // Stats-related (not needed for export)
+    var add_fw_timing = function(fw_timing) {
+        fw_timings.push(fw_timing);
+        fw_timings_sum += fw_timing;
+    }
+    var add_bw_timing = function(bw_timing) {
+        bw_timings.push(bw_timing);
+        bw_timings_sum += bw_timing;
+    }
+    var add_latencies_to_server = function(latency_to_server){
+        if (latency_to_server !== undefined) {
+            latencies_to_server.push(latency_to_server);
+            latencies_to_server_sum += latency_to_server;
+        }
+    }
 
     var functions = {
 
@@ -132,8 +155,79 @@ module.exports = function (tot_batches) {
             clients_dict = {};
             total_different_clients = 0;
             last_contributing_client = "<no client>";
-        }
+        },
 
+        // Stats-related
+        reset_stats: function() {
+            fw_timings.length=0; fw_timings_sum=0;
+            bw_timings.length=0; bw_timings_sum=0;
+            latencies_to_server.length=0; latencies_to_server_sum=0;
+            latencies_from_server.length=0; latencies_from_server_sum=0;
+        },
+        get_fw_timings_average : function() {
+            if (fw_timings.length > 0)
+                return fw_timings_sum/fw_timings.length;
+            return NaN;
+        },
+        get_bw_timings_average : function() {
+            if (bw_timings.length > 0)
+                return bw_timings_sum/bw_timings.length;
+            return NaN;
+        },
+        add_latencies_from_server : function(latency_from_server){
+            if (latency_from_server !== undefined) {
+                latencies_from_server.push(latency_from_server);
+                latencies_from_server_sum += latency_from_server;
+            }
+        },
+        get_latencies_from_server_average : function(){
+            if (latencies_from_server.length > 0)
+                return latencies_from_server_sum/latencies_from_server.length;
+            return NaN;
+        },
+        get_latencies_to_server_average : function(){
+            if (latencies_to_server.length > 0)
+                return latencies_to_server_sum/latencies_to_server.length;
+            return NaN;
+        },
+        update_stats : function(stats) { //Will be called when client posts the model back to server
+            add_fw_timing(stats.fw_timings_average);
+            add_bw_timing(stats.bw_timings_average);
+            add_latencies_to_server(stats.latency_to_server);
+        },
+
+        get_stats_in_csv : function() {
+            var stats_in_csv="";
+            var lines_in_csv = Math.max(fw_timings.length, bw_timings.length,
+                                latencies_to_server.length, latencies_from_server.length);
+
+            // Headlines
+            stats_in_csv += "fw_times,"
+            stats_in_csv += "bw_times,"
+            stats_in_csv += "latencies_to_server,"
+            stats_in_csv += "latencies_from_server\n";
+
+            // Data
+            for (var i=0; i<lines_in_csv; i++) {
+                if (fw_timings[i] !== undefined)
+                    stats_in_csv += fw_timings[i];
+                stats_in_csv += ",";
+
+                if (bw_timings[i] !== undefined)
+                    stats_in_csv += bw_timings[i];
+                stats_in_csv += ",";
+
+                if (latencies_to_server[i]  !== undefined)
+                    stats_in_csv += latencies_to_server[i];
+                stats_in_csv += ",";
+
+                if (latencies_from_server[i]  !== undefined)
+                    stats_in_csv += latencies_from_server[i] ;
+                stats_in_csv += ',<newline>,';
+            }
+
+            return stats_in_csv;
+        }
     };
 
     return functions;
