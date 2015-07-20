@@ -50,7 +50,7 @@
   text-align: center;
 }
 .secpart {
-  float: left;
+  /*float: left;*/
 }
 #lossgraph {
   /*border: 1px solid #F0F;*/

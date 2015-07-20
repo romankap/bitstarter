@@ -77,13 +77,14 @@ var toggle_validate = function () {
     if (get_validations) {
         validation_interval = setInterval(test_prediction_accuracy, validation_frequency);
         test_prediction_accuracy();
-        btn.value = 'Stop Validating';
+
+        btn.innerHTML = '<i class="fa fa-stop"></i> Stop Validation'
         start_validating();
     }
     else {
         clearInterval(validation_interval);
         clearInterval(validate_batch_interval);
-        btn.value = 'Start Validating';
+        btn.innerHTML = '<i class="fa fa-play-circle"></i> Start Validation'
     }
 }
 
@@ -236,7 +237,7 @@ var get_all_stats = function() {
     var parameters = {model_name: "CIFAR10" };
     $.get('/get_all_stats', parameters, function(data) {
         console.log("<get_all_stats> Received the following stats: " + data.stats_in_csv)
-        $('#download-stats-csv').attr("href", "data:text/csv;charset=utf-8," + data.stats_in_csv);
+        $('#download-stats-csv').attr("href", "data:text/plain;charset=utf-8," + data.stats_in_csv);
         $('#download-stats-csv').attr("download", "stats.csv");
         $('#download-stats-csv').show();
     });
