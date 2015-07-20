@@ -5,6 +5,13 @@ var test_batch = 50;
 var data_img_elt; //TODO: make this a single element instead of an array
 var img_data// = new Array(num_batches);
 
+var lossGraph = new cnnvis.Graph();
+var xLossWindow = new cnnutil.Window(100);
+var wLossWindow = new cnnutil.Window(100);
+var trainAccWindow = new cnnutil.Window(100);
+var valAccWindow = new cnnutil.Window(100);
+var testAccWindow = new cnnutil.Window(50, 1);
+
 var is_batch_loaded;// = new Array(num_batches);
 //var loaded_train_batch = [];
 var init_model;
@@ -317,12 +324,7 @@ var visualize_activations = function(net, elt) {
     }
 }
 
-var lossGraph = new cnnvis.Graph();
-var xLossWindow = new cnnutil.Window(100);
-var wLossWindow = new cnnutil.Window(100);
-var trainAccWindow = new cnnutil.Window(100);
-var valAccWindow = new cnnutil.Window(100);
-var testAccWindow = new cnnutil.Window(50, 1);
+
 
 
 // user settings 
