@@ -37,7 +37,7 @@ var make_string_ID = function ()
 }
 
 var change_client_name = function() {
-    $('#client-name').html("Hello trainer-client " + client_ID);
+    $('#client-name').html('Hello trainer-client <span class=\"color-blue\">' + client_ID + "</span>");
     $('#client-name-explanation').html("(" + client_ID + " is your identifying name in the crowdcomputing network)");
 }
 
