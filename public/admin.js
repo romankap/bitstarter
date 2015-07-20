@@ -185,8 +185,8 @@ var get_batch_num_from_server = function() {
     var parameters = {model_name: "CIFAR10" };
     $.get('/get_batch_num_from_server', parameters, function(data) {
         console.log("<get_batch_num_from_server> Starting to work on batch_num: " + data.batch_num);
-        curr_batch_num = data.batch_num;
-        return data.batch_num;
+        curr_batch_num = data.batch_num - 1;
+        return curr_batch_num;
     });
 }
 
@@ -208,7 +208,7 @@ var get_net_and_batch_from_server = function() {
 
         reset_all();
 
-        curr_batch_num = data.batch_num;
+        curr_batch_num = (data.batch_num-1) % validation_batch_num;
         update_displayed_batch_num(curr_batch_num);
 
         //var vis_elt = document.getElementById("visnet");
