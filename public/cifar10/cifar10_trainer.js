@@ -105,7 +105,7 @@ var compute = function() {
     paused = !paused;
     var btn = document.getElementById('compute-btn');
     if (paused) {
-        btn.innerHTML = '<i class="fa fa-play"></i> Compute';
+        btn.innerHTML = '<i class="fa fa-play"></i> Train';
         is_training_active = false;
         clearInterval(train_on_batch_interval);
         post_gradients_to_server();
