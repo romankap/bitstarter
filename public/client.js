@@ -1,9 +1,16 @@
 var net, trainer;
-var client_ID, curr_batch_num=-1;
+var client_ID, curr_batch_num=-1, curr_epoch_num;
 var num_batches = 51; // 50 training batches, 1 test
 var test_batch = 50;
 var data_img_elt; //TODO: make this a single element instead of an array
 var img_data// = new Array(num_batches);
+
+var lossGraph = new cnnvis.Graph();
+var xLossWindow = new cnnutil.Window(100);
+var wLossWindow = new cnnutil.Window(100);
+var trainAccWindow = new cnnutil.Window(100);
+var valAccWindow = new cnnutil.Window(100);
+var testAccWindow = new cnnutil.Window(50, 1);
 
 var is_batch_loaded;// = new Array(num_batches);
 //var loaded_train_batch = [];
@@ -23,10 +30,10 @@ var get_random_number = function (max_num) {
 var make_string_ID = function ()
 {
     var text = "";
-    var consonants = "AEIOU";
-    var vowels = "BCDFGJKLMNPQRSTVWYZ";
+    var consonants = "AEIO";
+    var vowels = "BDFGJKLMNPRSTVYZ";
 
-    for( var i=0; i < 4; i++ ) {
+    for( var i=0; i < 5; i++ ) {
         if (i % 2 == 0)
             text += vowels.charAt(Math.floor(Math.random() * vowels.length));
         else
@@ -37,11 +44,15 @@ var make_string_ID = function ()
 }
 
 var change_client_name = function() {
-    $('#client-name').html("Hello trainer-client " + client_ID);
+    $('#client-name').html('Hello trainer-client <span class=\"color-blue\">' + client_ID + "</span>");
+    $('#client-name-explanation').html("(" + client_ID + " is your identifying name in the crowdcomputing network)");
 }
 
-var update_displayed_batch_num = function(new_batch_num) {
-    $('#batch-num').html("Training on batch #" + new_batch_num);
+var update_displayed_batch_and_epoch_nums = function(new_batch_num, new_epoch_num) {
+    if (new_batch_num === -1)
+        $('#batch-num').html("Waiting for batch and epoch to update");
+    else
+        $('#batch-num').html("Training on batch #" + new_batch_num + " , epoch #" + new_epoch_num);
 }
 
 var load_data_batch = function(batch_to_load) {
@@ -316,14 +327,6 @@ var visualize_activations = function(net, elt) {
 
 
 
-var lossGraph = new cnnvis.Graph();
-var xLossWindow = new cnnutil.Window(100);
-var wLossWindow = new cnnutil.Window(100);
-var trainAccWindow = new cnnutil.Window(100);
-var valAccWindow = new cnnutil.Window(100);
-var testAccWindow = new cnnutil.Window(50, 1);
-
-
 // user settings 
 var change_lr = function() {
     trainer.learning_rate = parseFloat(document.getElementById("lr_input").value);
@@ -387,8 +390,6 @@ var load_pretrained = function() {
         reset_all();
     });
 }
-
-
 
 var get_batch_num_from_server = function() {
     var parameters = {model_name: "CIFAR10" };

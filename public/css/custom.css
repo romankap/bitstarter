@@ -2,6 +2,22 @@
     color: #fff;
 }
 
+.color-green {
+    color: green;
+}
+
+.color-blue {
+    color: blue;
+}
+
+.float-left {
+    float: left;
+}
+
+.text-align-left {
+    text-align: left;
+}
+
 .margin-top-10 {
   margin-top: 10px;
 }
@@ -24,7 +40,7 @@
 
 @media (min-width: 980px) {
   body {
-   padding-top: 60px;
+   padding-top: 45px;
   }
  .linediv-l {
    border-right: 1px white solid;

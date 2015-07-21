@@ -56,7 +56,7 @@ var validate_batch = function() {
 
     test_predict();
     var vis_elt = document.getElementById("visnet");
-    visualize_activations(net, vis_elt);
+    //visualize_activations(net, vis_elt);
     update_net_param_display();
 }
 
@@ -76,13 +76,24 @@ var toggle_validate = function () {
 
     if (get_validations) {
         validation_interval = setInterval(test_prediction_accuracy, validation_frequency);
-        btn.value = 'Stop Validating';
+        test_prediction_accuracy();
+
+        btn.innerHTML = '<i class="fa fa-stop"></i> Stop Validation'
         start_validating();
     }
     else {
         clearInterval(validation_interval);
         clearInterval(validate_batch_interval);
-        btn.value = 'Start Validating';
+        btn.innerHTML = '<i class="fa fa-play-circle"></i> Start Validation'
+    }
+}
+
+////////////////////////////////////////////
+
+var update_contributing_clients = function(total_different_clients, last_contributing_client) {
+    if (total_different_clients != undefined && last_contributing_client != undefined && total_different_clients > 0) {
+        $('#total-clients').html("total different clients: " + total_different_clients +
+                                " , last contributing client: " + last_contributing_client);
     }
 }
 
@@ -185,8 +196,8 @@ var get_batch_num_from_server = function() {
     var parameters = {model_name: "CIFAR10" };
     $.get('/get_batch_num_from_server', parameters, function(data) {
         console.log("<get_batch_num_from_server> Starting to work on batch_num: " + data.batch_num);
-        curr_batch_num = data.batch_num;
-        return data.batch_num;
+        curr_batch_num = data.batch_num - 1;
+        return curr_batch_num;
     });
 }
 
@@ -208,8 +219,9 @@ var get_net_and_batch_from_server = function() {
 
         reset_all();
 
-        curr_batch_num = data.batch_num;
-        update_displayed_batch_num(curr_batch_num);
+        curr_batch_num = (data.batch_num-1) % validation_batch_num;
+        update_displayed_batch_and_epoch_nums(curr_batch_num, data.epoch_num);
+        update_contributing_clients(data.total_different_clients, data.last_contributing_client);
 
         //var vis_elt = document.getElementById("visnet");
 
@@ -221,7 +233,15 @@ var get_net_and_batch_from_server = function() {
     });
 }
 
-
+var get_all_stats = function() {
+    var parameters = {model_name: "CIFAR10" };
+    $.get('/get_all_stats', parameters, function(data) {
+        console.log("<get_all_stats> Received the following stats: " + data.stats_in_csv)
+        $('#download-stats-csv').attr("href", "data:text/plain;charset=utf-8," + data.stats_in_csv);
+        $('#download-stats-csv').attr("download", "stats.csv");
+        $('#download-stats-csv').show();
+    });
+}
 
 var reset_model = function() {
     var parameters = {model_name: "CIFAR10"};

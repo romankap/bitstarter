@@ -5,6 +5,11 @@ var curr_model_ID = 0, curr_sample_num=-1;
 var is_net_loaded_from_server = false, is_training_active = false;
 var train_on_batch_interval;
 
+var fw_timings_sum, fw_timings_num;
+var bw_timings_sum, bw_timings_num;
+var latency_to_server, post_to_server_start, post_to_server_end;
+var latency_from_server, get_from_server_start, get_from_server_end;
+
 var gradients_calculator = {
     traverse: function (new_net_property, old_net_property, prev_property) {
         debug_global_counter = 0;
@@ -24,6 +29,32 @@ var gradients_calculator = {
     }
 }
 
+var reset_stats = function() {
+    fw_timings_sum = fw_timings_num = 0;
+    bw_timings_sum = bw_timings_num = 0;
+    post_to_server_start = post_to_server_end = -1;
+    get_from_server_start = get_from_server_end = -1;
+}
+
+var add_to_fw_and_bw_timing_stats = function(fw_time, bw_time) {
+    fw_timings_sum += fw_time;
+    fw_timings_num++;
+
+    bw_timings_sum += bw_time;
+    bw_timings_num++;
+}
+
+var get_fw_timings_average = function () {
+    if (fw_timings_num > 0)
+        return fw_timings_sum / fw_timings_num;
+    return null;
+}
+
+var get_bw_timings_average = function () {
+    if (bw_timings_num > 0)
+        return bw_timings_sum / bw_timings_num;
+    return null;
+}
 // ------------------------
 // BEGIN CIFAR10 SPECIFIC STUFF
 // ------------------------
@@ -74,23 +105,16 @@ var compute = function() {
     paused = !paused;
     var btn = document.getElementById('compute-btn');
     if (paused) {
-        btn.value = 'compute';
+        btn.innerHTML = '<i class="fa fa-play"></i> Compute';
         is_training_active = false;
         clearInterval(train_on_batch_interval);
         post_gradients_to_server();
     }
     else {
-        btn.value = 'pause';
+        btn.innerHTML = '<i class="fa fa-pause"></i> Pause';
         get_net_and_update_batch_from_server(); //calls start_working();
     }
 }
-
-var lossGraph = new cnnvis.Graph();
-var xLossWindow = new cnnutil.Window(100);
-var wLossWindow = new cnnutil.Window(100);
-var trainAccWindow = new cnnutil.Window(100);
-var valAccWindow = new cnnutil.Window(100);
-var testAccWindow = new cnnutil.Window(50, 1);
 
 var sample_training_instance = function (sample_num) {
 
@@ -119,7 +143,6 @@ var sample_training_instance = function (sample_num) {
 }
 
 var step = function(sample, sample_num) {
-
     var x = sample.x;
     var y = sample.label;
 
@@ -136,6 +159,7 @@ var step = function(sample, sample_num) {
     var stats = trainer.train(x, y);
     var lossx = stats.cost_loss;
     var lossw = stats.l2_decay_loss;
+    add_to_fw_and_bw_timing_stats(stats.fwd_time, stats.bwd_time);
 
     // keep track of stats such as the average training error and loss
     var yhat = net.getPrediction();
@@ -147,10 +171,10 @@ var step = function(sample, sample_num) {
     // visualize training status
     var train_elt = document.getElementById("trainstats");
     train_elt.innerHTML = '';
-    var t = 'Forward time per example: ' + stats.fwd_time + 'ms';
+    var t = 'Average forward time per example: ' + get_fw_timings_average().toFixed(2) + 'ms';
     train_elt.appendChild(document.createTextNode(t));
     train_elt.appendChild(document.createElement('br'));
-    var t = 'Backprop time per example: ' + stats.bwd_time + 'ms';
+    var t = 'Average backprop time per example: ' + get_bw_timings_average().toFixed(2) + 'ms';
     train_elt.appendChild(document.createTextNode(t));
     train_elt.appendChild(document.createElement('br'));
     var t = 'Classification loss: ' + f2t(xLossWindow.get_average());
@@ -162,52 +186,21 @@ var step = function(sample, sample_num) {
     var t = 'Training accuracy: ' + f2t(trainAccWindow.get_average());
     train_elt.appendChild(document.createTextNode(t));
     train_elt.appendChild(document.createElement('br'));
-    var t = 'Validation accuracy: ' + f2t(valAccWindow.get_average());
-    train_elt.appendChild(document.createTextNode(t));
-    train_elt.appendChild(document.createElement('br'));
+    //var t = 'Validation accuracy: ' + f2t(valAccWindow.get_average());
+    //train_elt.appendChild(document.createTextNode(t));
+    //train_elt.appendChild(document.createElement('br'));
     var t = 'Examples seen (out of '+ samples_in_batch + "): " + sample_num;
     train_elt.appendChild(document.createTextNode(t));
     train_elt.appendChild(document.createElement('br'));
-
-    // visualize activations
-    if(sample_num % 100 === 0) {
-        var vis_elt = document.getElementById("visnet");
-        visualize_activations(net, vis_elt);
-    }
-
-    // log progress to graph, (full loss)
-    if(sample_num % 200 === 0) {
-        var xa = xLossWindow.get_average();
-        var xw = wLossWindow.get_average();
-        if(xa >= 0 && xw >= 0) { // if they are -1 it means not enough data was accumulated yet for estimates
-            lossGraph.add(step_num, xa + xw);
-            lossGraph.drawSelf(document.getElementById("lossgraph"));
-        }
-    }
-
-    // run prediction on test set
-    //if((step_num % 1000 === 0 && step_num > 0) || step_num===100) {
-    //    test_predict();
-    //    // post gradients to server
-    //    post_gradients_to_server();
-    //    get_net_and_update_batch_from_server();
-    //}
 }
 
-// loads a training image and trains on it with the network
-
-
 var calculate_gradients = function() {
-    //console.log("------- Before calculating gradients> OLD net: " + JSON.stringify(old_net).substring(0, 2000));
-    //console.log("------- Before calculating gradients> NEW net: " + JSON.stringify(curr_net).substring(0, 2000));
-
     gradients_calculator.traverse(gradients_net, old_net, "");
-
-    //console.log("<====== After calculating gradients> NEW net: " + JSON.stringify(curr_net).substring(0, 2000));
 }
 
 var post_gradients_to_server = function() {
     is_training_active = false;
+    post_to_server_start = new Date().getTime();
 
     curr_net = net.toJSON();
     gradients_net = curr_net;
@@ -216,12 +209,19 @@ var post_gradients_to_server = function() {
     var learning_rate = trainer.learning_rate;
     var momentum = trainer.momentum;
     var l2_decay = trainer.l2_decay;
+
+    //Also sending previous latency to server
     var parameters = {model_name: "CIFAR10", net: gradients_net_in_JSON_string, model_ID: curr_model_ID,
-                    client_ID: client_ID ,learning_rate :learning_rate, momentum: momentum, l2_decay: l2_decay };
+                    client_ID: client_ID ,learning_rate :learning_rate, momentum: momentum, l2_decay: l2_decay,
+                    fw_timings_average: get_fw_timings_average().toFixed(2), bw_timings_average: get_bw_timings_average().toFixed(2),
+                    latency_to_server: latency_to_server};
     console.log("Sending CIFAR10 net_in_JSON with length " + parameters.net.length);
     //console.log("Sending CIFAR10 net: " + parameters.net.substring(0,1000));
     $.post('/update_model_from_gradients', parameters, function(data) {
         console.log(data);
+        post_to_server_end = new Date().getTime();
+        latency_to_server = post_to_server_end - post_to_server_start;
+        console.log("<post_gradients_to_server> Sending latency_to_server: " + latency_to_server);
     });
 
     if (!paused)
@@ -237,14 +237,19 @@ var get_batch_num_from_server = function() {
 }
 
 var get_net_and_update_batch_from_server = function() {
-    var parameters = {model_name: "CIFAR10", client_ID: client_ID};
-    //var batch_num;
+    get_from_server_start = new Date().getTime();
+
+    //Sending previous latency from server
+    var parameters = {model_name: "CIFAR10", client_ID: client_ID, latency_from_server: latency_from_server};
+    console.log("<get_net_and_update_batch_from_server> Sending latency_from_server: " + latency_from_server);
     is_net_loaded_from_server = false;
+
     $.get('/get_net_and_update_batch_from_server', parameters, function(data) {
         curr_batch_num = data.batch_num;
+        curr_epoch_num = data.epoch_num;
         load_data_batch(curr_batch_num);
 
-        update_displayed_batch_num(curr_batch_num);
+        update_displayed_batch_and_epoch_nums(curr_batch_num, curr_epoch_num);
 
         //old_net.fromJSON(net.toJSON());
         curr_net = JSON.parse(data.net);
@@ -262,6 +267,10 @@ var get_net_and_update_batch_from_server = function() {
 
         is_net_loaded_from_server = true;
 
+        get_from_server_end = new Date().getTime();
+        latency_from_server = get_from_server_end - get_from_server_start;
+
+        reset_stats();
         console.log("<get_net_and_update_batch_from_server> Received " + parameters.model_name + " net back. model_ID: " + data.model_ID);
         console.log("<get_net_and_update_batch_from_server> Working on batch: " + data.batch_num); //DEBUG
         console.log("<get_net_and_update_batch_from_server> Received " + data.net.length + " net in length back"); //DEBUG

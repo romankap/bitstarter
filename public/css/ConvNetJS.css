@@ -37,8 +37,17 @@
   margin: 1px;
 }
 #trainstats {
+  margin-bottom: 20px;
   text-align: left;
+  vertical-align: middle;
 }
+
+#controls {
+  text-align: left;
+  margin-bottom: 15px;
+  vertical-align: middle;
+}
+
 .clear {
   clear: both;
 }
@@ -50,7 +59,7 @@
   text-align: center;
 }
 .secpart {
-  float: left;
+  /*float: left;*/
 }
 #lossgraph {
   /*border: 1px solid #F0F;*/
