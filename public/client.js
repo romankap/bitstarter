@@ -224,6 +224,7 @@ var visualize_activations = function(net, elt) {
         }
 
         // visualize data gradients
+        /*
         if(L.layer_type !== 'softmax' && L.layer_type !== 'input' ) {
             var grad_div = document.createElement('div');
             grad_div.appendChild(document.createTextNode('Activation Gradients:'));
@@ -234,6 +235,7 @@ var visualize_activations = function(net, elt) {
             draw_activations(grad_div, L.out_act, scale, true);
             activations_div.appendChild(grad_div);
         }
+        */
 
         // visualize filters if they are of reasonable size
         if(L.layer_type === 'conv') {
@@ -253,6 +255,7 @@ var visualize_activations = function(net, elt) {
                     }
                 }
                 // gradients
+                /*
                 filters_div.appendChild(document.createElement('br'));
                 filters_div.appendChild(document.createTextNode('Weight Gradients:'));
                 filters_div.appendChild(document.createElement('br'));
@@ -263,7 +266,7 @@ var visualize_activations = function(net, elt) {
                         draw_activations(filters_div, L.filters[j], 2, true);
                         filters_div.appendChild(document.createTextNode(')'));
                     }
-                }
+                }*/
             } else {
                 filters_div.appendChild(document.createTextNode('Weights hidden, too small'));
             }

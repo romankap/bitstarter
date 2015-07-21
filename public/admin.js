@@ -3,7 +3,7 @@ var curr_model_ID=-1, curr_epoch_num=0;
 var curr_sample_num=0;
 
 var total_samples_predicted=0, total_predicted_correctly=0;
-var curr_testing_accuracy=0, curr_validation_accuracy=0;
+var curr_net_accuracy=0, curr_validation_accuracy=0;
 
 
 // ------------------------
@@ -13,11 +13,12 @@ var classes_txt = ['airplane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'hor
 
 var use_validation_data = true;
 var first_execution = true;
-var validation_frequency = 10 * 1000;
-var validation_batch_num = 50;
-var samples_in_test_batch = 1000;
-var validation_interval, validate_batch_interval;
-var get_validations = false, is_net_loaded_from_server = false;
+var check_net_accuracy_frequency = 10 * 1000;
+var test_batch_num = 50, validation_batch_num = 50; //TODO: change batch numbers and inputs accordingly
+var samples_in_test_batch = 1000, samples_in_validation_batch = 1000;
+var get_testing_model_interval, test_batch_interval;
+var get_net_accuracy = false;
+var is_testing_net_loaded_from_server = false, is_validation_net_loaded_from_server=false;
 
 /*$(function ()
 {
@@ -27,7 +28,7 @@ var get_validations = false, is_net_loaded_from_server = false;
 // int main
 $(window).load(function() {
     console.log("Hello Admin, your wish is net's command");
-    load_data_batch(validation_batch_num);
+    load_data_batch(test_batch_num);
     var AJAX_init_parameters = {model_name: "CIFAR10" };
     $.get('/get_init_model_from_server', AJAX_init_parameters, function(data) {
         console.log("Received an init_model from server: \n" + data.init_model);
@@ -47,45 +48,70 @@ $(window).load(function() {
     });
 });
 
-var test_prediction_accuracy = function () {
+var get_testing_model_from_server = function () {
     get_net_and_batch_from_server();
 }
 
 var validate_batch = function() {
-    if (!get_validations || !is_net_loaded_from_server) return;
+    if (!get_net_accuracy || !is_validation_net_loaded_from_server) return;
 
-    //test_predict();
-    predict_samples_group();
-    var vis_elt = document.getElementById("visnet");
+    if(total_samples_predicted < samples_in_validation_batch)
+        predict_samples_group(sample_validation_instance);
+    else{
+        toggle_validate();
+        $("#total-samples-tested").text("Based on the entire validation-set samples");
+    }
+    //var vis_elt = document.getElementById("visnet");
     //visualize_activations(net, vis_elt);
     //update_net_param_display();
 }
 
-var start_validating = function() {
+var test_batch = function() {
+    if (!get_net_accuracy || !is_testing_net_loaded_from_server) return;
+
+    if(total_samples_predicted < samples_in_test_batch){
+        predict_samples_group(sample_test_instance);
+    }
+    else{
+        $("#total-samples-tested").text("Based on the entire test-set samples. Plotted weight activations");
+        var vis_elt = document.getElementById("visnet");
+        visualize_activations(net, vis_elt);
+
+        is_testing_net_loaded_from_server = false;
+        get_testing_model_interval = setInterval(get_testing_model_from_server, check_net_accuracy_frequency);
+    }
+    //var vis_elt = document.getElementById("visnet");
+    //visualize_activations(net, vis_elt);
+    //update_net_param_display();
+}
+
+var start_testing = function() {
     if (is_batch_loaded) {
         console.log('Starting validation');
-        validate_batch_interval = setInterval(validate_batch, 0);
+        test_batch_interval = setInterval(test_batch, 0);
     }
     else {
-        setTimeout(start_validating, 200);
+        setTimeout(start_testing, 200);
     }
 }
 
 var toggle_validate = function () {
     var btn = document.getElementById('toggle-validate-btn');
-    get_validations = !get_validations;
+    get_net_accuracy = !get_net_accuracy;
 
-    if (get_validations) {
-        validation_interval = setInterval(test_prediction_accuracy, validation_frequency);
-        test_prediction_accuracy();
+    if (get_net_accuracy) {
+        if ($('#restart-checkbox').is(":checked"))
+            curr_epoch_num = -1;
+        get_testing_model_interval = setInterval(get_testing_model_from_server, check_net_accuracy_frequency);
+        get_testing_model_from_server();
 
-        btn.innerHTML = '<i class="fa fa-stop"></i> Stop Validation'
-        start_validating();
+        btn.innerHTML = '<i class="fa fa-stop"></i> Stop Testing'
+        start_testing();
     }
     else {
-        clearInterval(validation_interval);
-        clearInterval(validate_batch_interval);
-        btn.innerHTML = '<i class="fa fa-play-circle"></i> Start Validation'
+        clearInterval(get_testing_model_interval);
+        clearInterval(test_batch_interval);
+        btn.innerHTML = '<i class="fa fa-play-circle"></i> Start Testing'
     }
 }
 
@@ -98,8 +124,18 @@ var update_contributing_clients = function(total_different_clients, last_contrib
     }
 }
 
+var label_num_in_validation_batch = function(sample_num_to_test) {
+    return validation_batch_num*samples_in_test_batch + sample_num_to_test;
+}
+
+
+var label_num_in_test_batch = function(sample_num_to_test) {
+    return test_batch_num*samples_in_test_batch + sample_num_to_test;
+}
+
+
 // sample a random testing instance
-var sample_test_instance = function(sample_num_to_test) {
+var sample_image_instance = function(get_label_num ,sample_num_to_test) {
     if (sample_num_to_test === undefined)
         var sample_num_to_test = get_random_number(samples_in_test_batch);
 
@@ -118,27 +154,31 @@ var sample_test_instance = function(sample_num_to_test) {
         }
     }
 
-    // distort position and maybe flip
-    /*var distorted_sample = [];
-    //distorted_sample.push(x, 32, 0, 0, false); // push an un-augmented copy
-    for(var k=0;k<6;k++) {
-        var dx = Math.floor(Math.random()*5-2);
-        var dy = Math.floor(Math.random()*5-2);
-        distorted_sample.push(convnetjs.augment(x, 32, dx, dy, k>2));
-    }*/
-
-    var label_index = validation_batch_num*samples_in_test_batch + sample_num_to_test ;
-    // return multiple augmentations, and we will average the network over them
-    // to increase performance
+    var label_index = get_label_num(sample_num_to_test);
     return {x:x, label:labels[label_index]};
 }
 
-// Goes over the entire testing batch and updates curr_testing_accuracy
-var predict_samples_group = function() {
+
+var sample_test_instance = function(sample_num_to_test) {
+    return sample_image_instance(label_num_in_test_batch, sample_num_to_test);
+}
+
+var sample_validation_instance = function(sample_num_to_test) {
+    return sample_image_instance(label_num_in_validation_batch, sample_num_to_test);
+}
+
+// Goes over the entire testing batch and updates curr_validation_accuracy
+var get_validation_score = function() {
+
+}
+
+
+// Goes over the entire testing batch and updates curr_net_accuracy
+var predict_samples_group = function(sample_instance_function) {
     var num_classes = net.layers[net.layers.length-1].out_depth;
 
     for(var num=0;num<20;num++) {
-        var sample = sample_test_instance(curr_sample_num);
+        var sample = sample_instance_function(curr_sample_num);
         var sample_label = sample.label;  // ground truth label
 
         // forward prop it through the network
@@ -160,74 +200,10 @@ var predict_samples_group = function() {
 
         curr_sample_num++;
     }
-    curr_testing_accuracy = total_predicted_correctly / total_samples_predicted;
-    $("#testset_acc").text('average testing accuracy: ' + curr_testing_accuracy.toFixed(2));
+    curr_net_accuracy = total_predicted_correctly / total_samples_predicted;
+    $("#testset_acc").text('average testing accuracy: ' + curr_net_accuracy.toFixed(2));
     $("#total-samples-tested").text('Based on ' + total_samples_predicted + " samples");
     //console.log("<predict_samples_group> finished predicting total_samples_predicted: " + total_samples_predicted);
-}
-
-// Goes over the entire testing batch and updates curr_validation_accuracy
-var get_validation_score = function() {
-
-}
-
-// evaluate current network on test set
-var test_predict = function() {
-    var num_classes = net.layers[net.layers.length-1].out_depth;
-
-    document.getElementById('testset_acc').innerHTML = '';
-    var num_total = 0;
-    var num_correct = 0;
-
-    // grab a random test image
-    for(var num=0;num<4;num++) {
-        var sample = sample_test_instance();
-        var sample_label = sample.label;  // ground truth label
-
-        // forward prop it through the network
-        var aavg = new convnetjs.Vol(1,1,num_classes,0.0);
-        // ensures we always have a list, regardless if above returns single item or list
-        var xs = [].concat(sample.x);
-        var n = xs.length;
-        for(var i=0;i<n;i++) {
-            var a = net.forward(xs[i]);
-            aavg.addFrom(a);
-        }
-        var preds = [];
-        for(var k=0;k<aavg.w.length;k++) { preds.push({k:k,p:aavg.w[k]}); }
-        preds.sort(function(a,b){return a.p<b.p ? 1:-1;});
-
-        var correct = preds[0].k===sample_label;
-        if(correct) num_correct++;
-        num_total++;
-
-        var div = document.createElement('div');
-        div.className = 'testdiv';
-
-        // draw the image into a canvas
-        draw_activations_COLOR(div, xs[0], 2); // draw Vol into canv
-
-        // add predictions
-        var probsdiv = document.createElement('div');
-        div.className = 'probsdiv';
-        var t = '';
-        for(var k=0;k<3;k++) {
-            var col = preds[k].k===sample_label ? 'rgb(85,187,85)' : 'rgb(187,85,85)';
-            t += '<div class=\"pp\" style=\"width:' + Math.floor(preds[k].p/n*100) + 'px; margin-left: 70px; background-color:' + col + ';\">' + classes_txt[preds[k].k] + '</div>'
-        }
-        probsdiv.innerHTML = t;
-        div.appendChild(probsdiv);
-
-        // add it into DOM
-        $(div).prependTo($("#testset_vis")).hide().fadeIn('slow').slideDown('slow');
-        if($(".probsdiv").length>200) {
-            $("#testset_vis > .probsdiv").last().remove(); // pop to keep upper bound of shown items
-        }
-    }
-    testAccWindow.add(num_correct/num_total);
-    $("#testset_acc").text('average validation accuracy: ' + testAccWindow.get_average().toFixed(2));
-    //console.log("num_correct: " + num_correct + " | num_total: " + num_total);
-    //console.log('test accuracy : ' + testAccWindow.get_average().toFixed(2));
 }
 
 
@@ -240,35 +216,39 @@ var get_batch_num_from_server = function() {
     });
 }
 
+var load_net_from_server_data = function(data_from_server) {
+    var net_in_JSON = JSON.parse(data_from_server.net);
+    net = new convnetjs.Net();
+    net.fromJSON(net_in_JSON);
+    trainer = new convnetjs.SGDTrainer(net, {method:'adadelta', batch_size:4, l2_decay:0.0001});
+
+    trainer.learning_rate = data_from_server.learning_rate;
+    trainer.momentum = data_from_server.momentum;
+    trainer.l2_decay = data_from_server.l2_decay;
+    curr_model_ID  = data_from_server.model_ID;
+    curr_epoch_num = data_from_server.epoch_num;
+
+    reset_all();
+    curr_sample_num=0;
+    total_samples_predicted=0;
+    total_predicted_correctly=0;
+}
+
 var get_net_and_batch_from_server = function() {
     var parameters = {model_name: "CIFAR10", model_ID: curr_model_ID, epoch_num: curr_epoch_num };
     $.get('/get_net_and_batch_from_server', parameters, function(data) {
         if (data.batch_num == 0)
             curr_batch_num = 0;
         else
-            curr_batch_num = (data.batch_num-1) % validation_batch_num;
+            curr_batch_num = (data.batch_num-1) % test_batch_num;
 
         console.log("<get_net_and_batch_from_server> Received "+ parameters.model_name + " model with model_ID: " +
-                    curr_model_ID + " and epoch_num " + data.epoch_num);
+                    data.model_ID + " and epoch_num " + data.epoch_num);
 
         if (data.model_ID !== curr_model_ID || data.epoch_num !== curr_epoch_num){ //Load a new net for testing
-            var net_in_JSON = JSON.parse(data.net);
-            net = new convnetjs.Net();
-            net.fromJSON(net_in_JSON);
-            trainer = new convnetjs.SGDTrainer(net, {method:'adadelta', batch_size:4, l2_decay:0.0001});
+            load_net_from_server_data(data);
 
-            trainer.learning_rate = data.learning_rate;
-            trainer.momentum = data.momentum;
-            trainer.l2_decay = data.l2_decay;
-            curr_model_ID  = data.model_ID;
-            curr_epoch_num = data.epoch_num;
-
-            reset_all();
-            curr_sample_num=0;
-            total_samples_predicted=0;
-            total_predicted_correctly=0;
-
-            is_net_loaded_from_server = true;
+            is_testing_net_loaded_from_server = true;
             console.log("<get_net_and_batch_from_server> model_ID & epoch_num were updated ==> LOADING new net");
         }
         else
@@ -282,6 +262,29 @@ var get_net_and_batch_from_server = function() {
         //test_predict();
         //visualize_activations(net, vis_elt);
         //update_net_param_display();
+    });
+}
+
+var get_validation_model = function() {
+    var parameters = {model_name: "CIFAR10", model_ID: curr_model_ID};
+    $.get('/get_validation_net', parameters, function(data) {
+        load_net_from_server_data(data);
+
+        is_validation_net_loaded_from_server = true;
+    });
+}
+
+var store_testing_accuracy_on_server = function() {
+    var parameters = {model_ID: curr_model_ID, epoch_num: curr_epoch_num,
+                    test_accuracy: curr_net_accuracy};
+    $.post('/store_testing_accuracy_on_server', parameters, function(data) {
+        if(data.is_validation_needed) {
+            console.log("<store_testing_accuracy_on_server> Worse accuracy after " + curr_epoch_num +
+                        " epochs, starting validation");
+            //get_validation_model(); //TODO: remove comment from this line and implement function
+        }
+        else
+            console.log("<store_testing_accuracy_on_server> Stored testing accuracy " + curr_net_accuracy);
     });
 }
 
@@ -301,6 +304,9 @@ var reset_model = function() {
     $.post('/reset_model', parameters, function(data) {
         console.log("Resetting the model named: <" + parameters.model_name + "> stored on server");
     });
+
+    is_testing_net_loaded_from_server = false;
+    is_validation_net_loaded_from_server = false;
 }
 
 var change_net = function() {

@@ -6,6 +6,7 @@ var net_manager = require('../net_manager');
 
 var total_batches = 50;
 var cifar10_manager = net_manager(total_batches);
+var minimum_epochs_to_train=50;
 
 
 var cifar10_init_model = "layer_defs = [];\n\
@@ -52,5 +53,6 @@ exports.net_manager = cifar10_manager;
 //console.log(net.toJSON());
 //console.log(JSON.stringify(net.toJSON()).length);
 
+exports.minimum_epochs_to_train = minimum_epochs_to_train;
 exports.convnetjs = convnetjs;
 exports.net = net;

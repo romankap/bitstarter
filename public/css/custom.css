@@ -153,3 +153,19 @@ p {
 .points {
 	margin-top: 100px;
 }
+
+#restart-checkbox-div label {
+    display: block;
+    padding-left: 15px;
+    text-indent: -15px;
+}
+#restart-checkbox-div input {
+    width: 13px;
+    height: 13px;
+    padding: 0;
+    margin:0;
+    vertical-align: bottom;
+    position: relative;
+    top: -1px;
+    *overflow: hidden;
+}

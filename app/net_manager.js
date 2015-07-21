@@ -24,6 +24,7 @@ module.exports = function (tot_batches) {
     var bw_timings = new Array(), bw_timings_sum=0;
     var latencies_to_server = new Array(), latencies_to_server_sum=0;
     var latencies_from_server = new Array(), latencies_from_server_sum=0;
+    var last_testing_accuracy=0, validation_accuracy=0;
 
     var increase_batch_num = function () {
         batch_num++;
@@ -174,6 +175,8 @@ module.exports = function (tot_batches) {
             bw_timings.length=0; bw_timings_sum=0;
             latencies_to_server.length=0; latencies_to_server_sum=0;
             latencies_from_server.length=0; latencies_from_server_sum=0;
+
+            last_testing_accuracy=0, validation_accuracy=0;
         },
         get_fw_timings_average : function() {
             if (fw_timings.length > 0)
@@ -205,6 +208,13 @@ module.exports = function (tot_batches) {
             add_fw_timing(stats.fw_timings_average);
             add_bw_timing(stats.bw_timings_average);
             add_latencies_to_server(stats.latency_to_server);
+        },
+        is_new_testing_accuracy_better : function(new_testing_accuracy){
+            if (new_testing_accuracy > curr_testing_accuracy) {
+                curr_testing_accuracy = new_testing_accuracy;
+                return true;
+            }
+            return false;
         },
 
         get_stats_in_csv : function() {

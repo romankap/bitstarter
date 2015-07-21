@@ -153,6 +153,35 @@ app.post('/store_new_model_on_server', function(request, response){
     console.log("<store_new_model_on_server> Model " + request.body.model_name + " was changed and saved. New model_ID: " + new_model_ID);
 });
 
+var stop_training_and_store_net = function() {
+
+}
+
+app.post('/store_testing_accuracy_on_server', function(request, response){
+    if (cifar10.net_manager.is_new_testing_accuracy_better(request.body.test_accuracy) && request.body.epoch_num < cifar10.minimum_epochs_to_train)
+    {
+        var res = {is_validation_needed: false};
+        response.send(res);
+    }
+    else {
+        var res = {is_validation_needed: true};
+        response.send(res);
+        stop_training_and_store_net();
+    }
+});
+
+app.get('/get_validation_net', function(request, response) {
+    var model_parameters = cifar10.net_manager.get_model_parameters();
+    var parameters = {net : cifar10.net_manager.get_weights(), batch_num: cifar10.net_manager.get_batch_num(),
+        epoch_num: cifar10.net_manager.get_epochs_count(),
+        model_ID: cifar10.net_manager.get_model_ID(),learning_rate : model_parameters.learning_rate,
+        momentum : model_parameters.momentum , l2_decay: model_parameters .l2_decay,
+        total_different_clients: cifar10.net_manager.get_different_clients_num(),
+        last_contributing_client: cifar10.net_manager.get_last_contributing_client()};
+
+    response.send(parameters);
+});
+
 // ====== Default case ========
 
 app.get('*', function(request, response) {
