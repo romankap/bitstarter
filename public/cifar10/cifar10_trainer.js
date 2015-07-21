@@ -105,13 +105,13 @@ var compute = function() {
     paused = !paused;
     var btn = document.getElementById('compute-btn');
     if (paused) {
-        btn.value = 'compute';
+        btn.innerHTML = '<i class="fa fa-play"></i> Compute';
         is_training_active = false;
         clearInterval(train_on_batch_interval);
         post_gradients_to_server();
     }
     else {
-        btn.value = 'pause';
+        btn.innerHTML = '<i class="fa fa-pause"></i> Pause';
         get_net_and_update_batch_from_server(); //calls start_working();
     }
 }

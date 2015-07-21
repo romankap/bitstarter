@@ -31,7 +31,7 @@ var make_string_ID = function ()
 {
     var text = "";
     var consonants = "AEIO";
-    var vowels = "BDFGJKLMNPQRSTVYZ";
+    var vowels = "BDFGJKLMNPRSTVYZ";
 
     for( var i=0; i < 5; i++ ) {
         if (i % 2 == 0)
