@@ -1,6 +1,10 @@
 var layer_defs, net, trainer;
-var curr_model_ID;
-var curr_sample_num;
+var curr_model_ID=-1, curr_epoch_num=0;
+var curr_sample_num=0;
+
+var total_samples_predicted=0, total_predicted_correctly=0;
+var curr_testing_accuracy=0, curr_validation_accuracy=0;
+
 
 // ------------------------
 // BEGIN CIFAR10 SPECIFIC STUFF
@@ -9,7 +13,7 @@ var classes_txt = ['airplane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'hor
 
 var use_validation_data = true;
 var first_execution = true;
-var validation_frequency = 30 * 1000;
+var validation_frequency = 10 * 1000;
 var validation_batch_num = 50;
 var samples_in_test_batch = 1000;
 var validation_interval, validate_batch_interval;
@@ -48,16 +52,13 @@ var test_prediction_accuracy = function () {
 }
 
 var validate_batch = function() {
-    if (!get_validations) return;
+    if (!get_validations || !is_net_loaded_from_server) return;
 
-    //curr_sample_num = get_random_number(samples_in_test_batch);
-    //var sample = sample_test_instance(curr_sample_num);
-    //step(sample, curr_sample_num); // process this image
-
-    test_predict();
+    //test_predict();
+    predict_samples_group();
     var vis_elt = document.getElementById("visnet");
     //visualize_activations(net, vis_elt);
-    update_net_param_display();
+    //update_net_param_display();
 }
 
 var start_validating = function() {
@@ -97,10 +98,10 @@ var update_contributing_clients = function(total_different_clients, last_contrib
     }
 }
 
-
 // sample a random testing instance
-var sample_test_instance = function() {
-    var random_num = get_random_number(samples_in_test_batch);
+var sample_test_instance = function(sample_num_to_test) {
+    if (sample_num_to_test === undefined)
+        var sample_num_to_test = get_random_number(samples_in_test_batch);
 
     var p = img_data.data;
     var x = new convnetjs.Vol(32,32,3,0.0);
@@ -110,7 +111,7 @@ var sample_test_instance = function() {
         var i=0;
         for(var xc=0;xc<32;xc++) {
             for(var yc=0;yc<32;yc++) {
-                var ix = ((W * random_num) + i) * 4 + dc;
+                var ix = ((W * sample_num_to_test) + i) * 4 + dc;
                 x.set(yc,xc,dc,p[ix]/255.0-0.5);
                 i++;
             }
@@ -118,18 +119,56 @@ var sample_test_instance = function() {
     }
 
     // distort position and maybe flip
-    var distorted_sample = [];
+    /*var distorted_sample = [];
     //distorted_sample.push(x, 32, 0, 0, false); // push an un-augmented copy
     for(var k=0;k<6;k++) {
         var dx = Math.floor(Math.random()*5-2);
         var dy = Math.floor(Math.random()*5-2);
         distorted_sample.push(convnetjs.augment(x, 32, dx, dy, k>2));
-    }
+    }*/
 
-    var label_index = validation_batch_num*samples_in_test_batch + random_num ;
+    var label_index = validation_batch_num*samples_in_test_batch + sample_num_to_test ;
     // return multiple augmentations, and we will average the network over them
     // to increase performance
-    return {x:distorted_sample, label:labels[label_index]};
+    return {x:x, label:labels[label_index]};
+}
+
+// Goes over the entire testing batch and updates curr_testing_accuracy
+var predict_samples_group = function() {
+    var num_classes = net.layers[net.layers.length-1].out_depth;
+
+    for(var num=0;num<20;num++) {
+        var sample = sample_test_instance(curr_sample_num);
+        var sample_label = sample.label;  // ground truth label
+
+        // forward prop it through the network
+        var aavg = new convnetjs.Vol(1,1,num_classes,0.0);
+        // ensures we always have a list, regardless if above returns single item or list
+        var xs = [].concat(sample.x);
+        var n = xs.length;
+        for(var i=0;i<n;i++) {
+            var a = net.forward(xs[i]);
+            aavg.addFrom(a);
+        }
+        var preds = [];
+        for(var k=0;k<aavg.w.length;k++) { preds.push({k:k,p:aavg.w[k]}); }
+        preds.sort(function(a,b){return a.p<b.p ? 1:-1;});
+
+        var correct = preds[0].k===sample_label;
+        if(correct) total_predicted_correctly++;
+        total_samples_predicted++;
+
+        curr_sample_num++;
+    }
+    curr_testing_accuracy = total_predicted_correctly / total_samples_predicted;
+    $("#testset_acc").text('average testing accuracy: ' + curr_testing_accuracy.toFixed(2));
+    $("#total-samples-tested").text('Based on ' + total_samples_predicted + " samples");
+    //console.log("<predict_samples_group> finished predicting total_samples_predicted: " + total_samples_predicted);
+}
+
+// Goes over the entire testing batch and updates curr_validation_accuracy
+var get_validation_score = function() {
+
 }
 
 // evaluate current network on test set
@@ -202,25 +241,40 @@ var get_batch_num_from_server = function() {
 }
 
 var get_net_and_batch_from_server = function() {
-    var parameters = {model_name: "CIFAR10" };
+    var parameters = {model_name: "CIFAR10", model_ID: curr_model_ID, epoch_num: curr_epoch_num };
     $.get('/get_net_and_batch_from_server', parameters, function(data) {
-        curr_model_ID  = data.model_ID;
-        console.log("<get_net_and_batch_from_server> Received "+ parameters.model_name + " model with model_ID: " + curr_model_ID);
+        if (data.batch_num == 0)
+            curr_batch_num = 0;
+        else
+            curr_batch_num = (data.batch_num-1) % validation_batch_num;
 
-        var net_in_JSON = JSON.parse(data.net);
-        net = new convnetjs.Net();
-        net.fromJSON(net_in_JSON);
-        trainer = new convnetjs.SGDTrainer(net, {method:'adadelta', batch_size:4, l2_decay:0.0001});
+        console.log("<get_net_and_batch_from_server> Received "+ parameters.model_name + " model with model_ID: " +
+                    curr_model_ID + " and epoch_num " + data.epoch_num);
 
-        trainer.learning_rate = data.learning_rate;
-        trainer.momentum = data.momentum;
-        trainer.l2_decay = data.l2_decay;
-        curr_model_ID  = data.model_ID;
+        if (data.model_ID !== curr_model_ID || data.epoch_num !== curr_epoch_num){ //Load a new net for testing
+            var net_in_JSON = JSON.parse(data.net);
+            net = new convnetjs.Net();
+            net.fromJSON(net_in_JSON);
+            trainer = new convnetjs.SGDTrainer(net, {method:'adadelta', batch_size:4, l2_decay:0.0001});
 
-        reset_all();
+            trainer.learning_rate = data.learning_rate;
+            trainer.momentum = data.momentum;
+            trainer.l2_decay = data.l2_decay;
+            curr_model_ID  = data.model_ID;
+            curr_epoch_num = data.epoch_num;
 
-        curr_batch_num = (data.batch_num-1) % validation_batch_num;
-        update_displayed_batch_and_epoch_nums(curr_batch_num, data.epoch_num);
+            reset_all();
+            curr_sample_num=0;
+            total_samples_predicted=0;
+            total_predicted_correctly=0;
+
+            is_net_loaded_from_server = true;
+            console.log("<get_net_and_batch_from_server> model_ID & epoch_num were updated ==> LOADING new net");
+        }
+        else
+            console.log("<get_net_and_batch_from_server> model_ID & epoch_num DIDN'T update ==> KEEPING old net");
+
+        update_displayed_batch_and_epoch_nums(curr_batch_num, curr_epoch_num);
         update_contributing_clients(data.total_different_clients, data.last_contributing_client);
 
         //var vis_elt = document.getElementById("visnet");
@@ -228,8 +282,6 @@ var get_net_and_batch_from_server = function() {
         //test_predict();
         //visualize_activations(net, vis_elt);
         //update_net_param_display();
-
-        is_net_loaded_from_server = true;
     });
 }
 

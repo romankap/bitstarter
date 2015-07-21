@@ -133,9 +133,9 @@ var sample_training_instance = function (sample_num) {
             }
         }
     }
-    var dx = Math.floor(Math.random()*5-2);
-    var dy = Math.floor(Math.random()*5-2);
-    new_Vol = convnetjs.augment(new_Vol, 32, dx, dy, Math.random()<0.5); //maybe flip horizontally
+    //var dx = Math.floor(Math.random()*5-2);
+    //var dy = Math.floor(Math.random()*5-2);
+    //new_Vol = convnetjs.augment(new_Vol, 32, dx, dy, Math.random()<0.5); //maybe flip horizontally
 
     //var isval = use_validation_data && sample_num%10===0 ? true : false;
     var label_num = curr_batch_num * samples_in_batch + sample_num;
@@ -162,36 +162,38 @@ var step = function(sample, sample_num) {
     add_to_fw_and_bw_timing_stats(stats.fwd_time, stats.bwd_time);
 
     // keep track of stats such as the average training error and loss
-    var yhat = net.getPrediction();
-    var train_acc = yhat === y ? 1.0 : 0.0;
+    //var yhat = net.getPrediction();
+    //var train_acc = yhat === y ? 1.0 : 0.0;
     xLossWindow.add(lossx);
     wLossWindow.add(lossw);
-    trainAccWindow.add(train_acc);
+    //trainAccWindow.add(train_acc);
 
     // visualize training status
-    var train_elt = document.getElementById("trainstats");
-    train_elt.innerHTML = '';
-    var t = 'Average forward time per example: ' + get_fw_timings_average().toFixed(2) + 'ms';
-    train_elt.appendChild(document.createTextNode(t));
-    train_elt.appendChild(document.createElement('br'));
-    var t = 'Average backprop time per example: ' + get_bw_timings_average().toFixed(2) + 'ms';
-    train_elt.appendChild(document.createTextNode(t));
-    train_elt.appendChild(document.createElement('br'));
-    var t = 'Classification loss: ' + f2t(xLossWindow.get_average());
-    train_elt.appendChild(document.createTextNode(t));
-    train_elt.appendChild(document.createElement('br'));
-    var t = 'L2 Weight decay loss: ' + f2t(wLossWindow.get_average());
-    train_elt.appendChild(document.createTextNode(t));
-    train_elt.appendChild(document.createElement('br'));
-    var t = 'Training accuracy: ' + f2t(trainAccWindow.get_average());
-    train_elt.appendChild(document.createTextNode(t));
-    train_elt.appendChild(document.createElement('br'));
-    //var t = 'Validation accuracy: ' + f2t(valAccWindow.get_average());
-    //train_elt.appendChild(document.createTextNode(t));
-    //train_elt.appendChild(document.createElement('br'));
-    var t = 'Examples seen (out of '+ samples_in_batch + "): " + sample_num;
-    train_elt.appendChild(document.createTextNode(t));
-    train_elt.appendChild(document.createElement('br'));
+    if (sample_num % 10 === 0) {
+        var train_elt = document.getElementById("trainstats");
+        train_elt.innerHTML = '';
+        var t = 'Average forward time per example: ' + get_fw_timings_average().toFixed(2) + 'ms';
+        train_elt.appendChild(document.createTextNode(t));
+        train_elt.appendChild(document.createElement('br'));
+        var t = 'Average backprop time per example: ' + get_bw_timings_average().toFixed(2) + 'ms';
+        train_elt.appendChild(document.createTextNode(t));
+        train_elt.appendChild(document.createElement('br'));
+        var t = 'Classification loss: ' + f2t(xLossWindow.get_average());
+        train_elt.appendChild(document.createTextNode(t));
+        train_elt.appendChild(document.createElement('br'));
+        var t = 'L2 Weight decay loss: ' + f2t(wLossWindow.get_average());
+        train_elt.appendChild(document.createTextNode(t));
+        train_elt.appendChild(document.createElement('br'));
+        //var t = 'Training accuracy: ' + f2t(trainAccWindow.get_average());
+        //train_elt.appendChild(document.createTextNode(t));
+        //train_elt.appendChild(document.createElement('br'));
+        //var t = 'Validation accuracy: ' + f2t(valAccWindow.get_average());
+        //train_elt.appendChild(document.createTextNode(t));
+        //train_elt.appendChild(document.createElement('br'));
+        var t = 'Examples seen (out of '+ samples_in_batch + "): " + sample_num;
+        train_elt.appendChild(document.createTextNode(t));
+        train_elt.appendChild(document.createElement('br'));
+    }
 }
 
 var calculate_gradients = function() {

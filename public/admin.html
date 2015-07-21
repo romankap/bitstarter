@@ -65,8 +65,11 @@
                     </button>
                 </div>
 
-                <div id="trainstats"></div>
-
+                <div style="clear:both;"></div>
+                <div id="accuracy-block">
+                    <h3 id="testset_acc"></h3>
+                    <h5 id="total-samples-tested"></h5>
+                </div>
 
                 <table id="controls" class="text-align-left col-sm-4" align="center">
                     <tr><td>Learning rate: </td>  <td> <input name="lri" type="text" maxlength="20" id="lr_input"/></td></tr>
@@ -85,9 +88,6 @@
             </div>
         </div>
 
-            <div style="clear:both;"></div>
-
-            <h3 id="testset_acc"></h3>
 
             <div class="col-sm-12 text-center margin-bottom-30">
                 <h1 class="convnet-headline">Click to reset net's weights</h1>

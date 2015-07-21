@@ -69,18 +69,31 @@ app.get('/get_net_and_update_batch_from_server', function(request, response){
     cifar10.net_manager.add_latencies_from_server(request.query.latency_from_server);
 });
 
-
+// To be used by the Admin
 app.get('/get_net_and_batch_from_server', function(request, response){
-    var model_parameters = cifar10.net_manager.get_model_parameters();
-    var parameters = {net : cifar10.net_manager.get_weights(), batch_num: cifar10.net_manager.get_batch_num(),
+    if (cifar10.net_manager.is_need_to_send_net_for_testing(request.query.model_ID, request.query.epoch_num)) {
+        var model_parameters = cifar10.net_manager.get_model_parameters();
+        var parameters = {net : cifar10.net_manager.get_weights(), batch_num: cifar10.net_manager.get_batch_num(),
                         epoch_num: cifar10.net_manager.get_epochs_count(),
                         model_ID: cifar10.net_manager.get_model_ID(),learning_rate : model_parameters.learning_rate,
                         momentum : model_parameters.momentum , l2_decay: model_parameters .l2_decay,
                         total_different_clients: cifar10.net_manager.get_different_clients_num(),
                         last_contributing_client: cifar10.net_manager.get_last_contributing_client()};
-    //parameters = {net : cifar10.net_manager.get_weights()};
+
+        console.log(" <get_net_and_batch_from_server> sending net with model_ID " + parameters.model_ID +
+                        " and in epoch_num " + parameters.epoch_num + " to Admin");
+    }
+    else {
+        var parameters = {batch_num: cifar10.net_manager.get_batch_num(),
+                        epoch_num: cifar10.net_manager.get_epochs_count(),
+                        model_ID: cifar10.net_manager.get_model_ID(),
+                        total_different_clients: cifar10.net_manager.get_different_clients_num(),
+                        last_contributing_client: cifar10.net_manager.get_last_contributing_client()};
+
+        console.log(" <get_net_and_batch_from_server> NOT sending net to Admin. Model_ID " + parameters.model_ID +
+                        " & epoch_num " + parameters.epoch_num + " didn't update");
+    }
     response.send(parameters);
-    console.log(" <get_net_and_batch_from_server> sent net with model_ID: " + parameters.model_ID + " to Admin");
 });
 
 app.get('/get_average_stats', function(request, response) {

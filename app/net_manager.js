@@ -16,8 +16,8 @@ module.exports = function (tot_batches) {
     var total_batches = tot_batches;
     var weights, weights_in_JSON;
     var batch_num = 0;
-    var model_ID = 0, init_model;
-    var epochs_count = 0;
+    var model_ID = 0, init_model, last_model_ID_sent;
+    var epochs_count = 0, last_epoch_sent;
     var clients_dict = {}, total_different_clients=0, last_contributing_client = "<no client>";
 
     var fw_timings = new Array(), fw_timings_sum=0;
@@ -27,9 +27,10 @@ module.exports = function (tot_batches) {
 
     var increase_batch_num = function () {
         batch_num++;
-        if (batch_num === total_batches)
+        if (batch_num === total_batches) {
             epochs_count++;
-
+            console.log("<increase_batch_num> IT'S A NEW EPOCH, #" + epochs_count);
+        }
         batch_num = batch_num % total_batches;
 
         console.log("<increase_batch_num> NEW batch_num = " + batch_num + " (out of " + total_batches + ")");
@@ -122,6 +123,8 @@ module.exports = function (tot_batches) {
         reset_batch_num_and_epochs_count: function () {
             batch_num = 0;
             epochs_count = 0;
+            last_epoch_sent = -1;
+            last_model_ID_sent = -1;
         },
         generate_new_model_ID: function() {
             model_ID = generate_random_number();
@@ -155,6 +158,14 @@ module.exports = function (tot_batches) {
             clients_dict = {};
             total_different_clients = 0;
             last_contributing_client = "<no client>";
+        },
+        is_need_to_send_net_for_testing : function(Admins_model_ID, Admins_epoch_num) {
+            if (Admins_model_ID !== model_ID || Admins_epoch_num !== epochs_count) {
+                last_model_ID_sent = model_ID;
+                last_epoch_sent = epochs_count;
+                return true;
+            }
+            return false;
         },
 
         // Stats-related
@@ -205,7 +216,8 @@ module.exports = function (tot_batches) {
             stats_in_csv += "fw_times,"
             stats_in_csv += "bw_times,"
             stats_in_csv += "latencies_to_server,"
-            stats_in_csv += "latencies_from_server\n";
+            stats_in_csv += "latencies_from_server";
+            stats_in_csv += "\r\n,<newline>,"
 
             // Data
             for (var i=0; i<lines_in_csv; i++) {
