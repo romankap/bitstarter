@@ -110,7 +110,7 @@ app.get('/get_average_stats', function(request, response) {
 });
 
 app.get('/get_all_stats', function(request, response) {
-    var stats_in_csv = { stats_in_csv : cifar10.net_manager.get_stats_in_csv()};
+    var stats_in_csv = cifar10.net_manager.get_stats_in_csv();
 
     response.send(stats_in_csv);
     console.log("<get_all_stats> all sent stats to requester in CSV");
@@ -164,7 +164,8 @@ var stop_training_and_store_net = function() {
 }
 
 app.post('/store_validation_accuracy_on_server', function(request, response){
-    if (cifar10.net_manager.is_new_validation_accuracy_better(request.body.test_accuracy) && request.body.epoch_num < cifar10.minimum_epochs_to_train)
+    if (cifar10.net_manager.is_new_validation_accuracy_better(request.body.test_accuracy, request.body.epoch_num)
+            && request.body.epoch_num < cifar10.minimum_epochs_to_train)
     {
         var res = {is_testing_needed: false};
         response.send(res);
@@ -186,6 +187,12 @@ app.get('/get_validation_net', function(request, response) {
         last_contributing_client: cifar10.net_manager.get_last_contributing_client()};
 
     response.send(parameters);
+});
+
+app.get('/get_net_snapshot', function(request, response) {
+    var net_in_JSON_to_send = net.toJSON();
+
+    response.send(net_in_JSON_to_send);
 });
 
 // ====== Default case ========

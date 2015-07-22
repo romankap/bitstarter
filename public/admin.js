@@ -157,13 +157,14 @@ var update_contributing_clients = function(total_different_clients, last_contrib
 }
 
 var label_num_in_validation_batch = function(sample_num_to_validate) {
-    return total_training_batches*samples_in_test_batch + sample_num_to_validate; //TODO: replace this line with the following
-    //return sample_num_to_validate;
+    //return total_training_batches*samples_in_test_batch + sample_num_to_validate; //TODO: replace this line with the following
+    return sample_num_to_validate;
 }
 
 
 var label_num_in_test_batch = function(sample_num_to_test) {
-    return total_training_batches*samples_in_test_batch + sample_num_to_test;//TODO: replace this line with the following
+    //return total_training_batches*samples_in_test_batch + sample_num_to_test; //OLD
+    return samples_in_validation_batch + sample_num_to_test; //TODO: replace this line with the following one
     //return samples_in_validation_batch + sample_num_to_test; //test samples follow the validation samples
 }
 
@@ -193,7 +194,7 @@ var sample_image_instance = function(get_label_num ,sample_num_to_predict) {
 }
 
 
-var sample_validation_instance = function(sample_num_to_test) {
+var sample_testing_instance = function(sample_num_to_test) {
     return sample_image_instance(label_num_in_test_batch, sample_num_to_test);
 }
 
@@ -329,15 +330,17 @@ var store_validation_accuracy_on_server = function() {
     });
 }
 
+/*
 var get_all_stats = function() {
     var parameters = {model_name: "CIFAR10" };
     $.get('/get_all_stats', parameters, function(data) {
-        console.log("<get_all_stats> Received the following stats: " + data.stats_in_csv)
-        $('#download-stats-csv').attr("href", "data:text/plain;charset=utf-8," + data.stats_in_csv);
+        var stats_received = data;//.toString();//.replace('<newline>' ,/\n/);
+        console.log("<get_all_stats> Received the following stats: " + stats_received);
+        $('#download-stats-csv').attr("href", "data:text/plain;charset=utf-8," + stats_received);
         $('#download-stats-csv').attr("download", "stats.csv");
         $('#download-stats-csv').show();
     });
-}
+}*/
 
 var reset_model = function() {
     var parameters = {model_name: "CIFAR10"};

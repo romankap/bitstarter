@@ -66,7 +66,7 @@
                             Force Restart (re-validate on the same epoch)
                         </label>
                     </div>
-                    <button id="toggle-validate-btn" type="submit"  onclick="toggle_validate();" class="btn btn-large btn-success start-working-btn ">
+                    <button id="toggle-validate-btn" type="submit"  onclick="toggle_validate();" class="btn btn-large btn-warning start-working-btn ">
                         <i id="validate-icon" class="fa fa-play-circle"></i> Start Validating
                     </button>
                 </div>
@@ -79,10 +79,12 @@
             </div>
 
             <div class="col-sm-12 margin-bottom-15">
-                <button id="get-all-stats-btn" type="submit"onclick="get_all_stats();" class="btn btn-large btn-success">
-                    <i class="fa fa-table"></i> Get all stats
-                </button>
-                <a id="download-stats-csv" class="btn btn-large btn-success" style="display: none;"><i class="fa fa-download"></i> Download stats</a>
+                <a href="/get_all_stats" download="stats_direct.csv" class="btn btn-large btn-success">
+                    <i class="fa fa-table"></i> Download stats
+                </a>
+                <a href="/get_net_snapshot" download="net_in_JSON.txt" class="btn btn-info">
+                    <i class="fa fa-camera-retro"></i> Download net's <br/> JSON snapshot
+                </a>
             </div>
         </div>
 

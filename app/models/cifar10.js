@@ -5,7 +5,7 @@ var convnetjs = require('convnetjs');
 var net_manager = require('../net_manager');
 
 /// ---- DEBUG ---- ///
-
+/*
 var total_cifar10_training_samples = 100;
 var samples_in_training_batch=50;
 var samples_in_test_batch=100;
@@ -13,14 +13,16 @@ var samples_in_validation_batch=100;
 
 var total_training_batches = total_cifar10_training_samples / samples_in_training_batch;
 var minimum_epochs_to_train=2;
+ /// ---- END of DEBUG ---- ///
+*/
 
-/*var total_cifar10_training_samples = 45000;
+var total_cifar10_training_samples = 45000;
 var samples_in_training_batch=1000;
 var samples_in_test_batch=1000;
 var samples_in_validation_batch=1000;
 
 var total_training_batches = total_cifar10_training_samples / samples_in_training_batch;
-var minimum_epochs_to_train=50;*/
+var minimum_epochs_to_train=50;
 
 exports.total_training_batches = total_training_batches;
 exports.samples_in_training_batch = samples_in_training_batch;

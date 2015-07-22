@@ -12,6 +12,10 @@ function generate_random_number() {
     return Math.floor((Math.random() * 100000) + 1);
 }
 
+var getTime = function() {
+    return new Date().getTime();
+}
+
 module.exports = function (model_training_batches) {
     var total_training_batches = model_training_batches;
     var weights, weights_in_JSON;
@@ -24,7 +28,10 @@ module.exports = function (model_training_batches) {
     var bw_timings = new Array(), bw_timings_sum=0;
     var latencies_to_server = new Array(), latencies_to_server_sum=0;
     var latencies_from_server = new Array(), latencies_from_server_sum=0;
-    var last_testing_accuracy=0, validation_accuracy=0;
+    var time_to_train_epochs_array = new Array(), epoch_start_time=0, epoch_end_time=0;
+    var validation_accuracies_array = new Array();
+
+    var last_validation_accuracy=0, testing_accuracy=0;
 
     var increase_batch_num = function () {
         batch_num++;
@@ -32,6 +39,7 @@ module.exports = function (model_training_batches) {
 
         if (batch_num === 0) {
             epochs_count++;
+            update_epoch_end_time_and_duration();
         }
         console.log("<increase_batch_num> NEW batch_num = " + batch_num + " (out of " + total_training_batches + ")");
     };
@@ -87,6 +95,14 @@ module.exports = function (model_training_batches) {
         }
     }
 
+    var update_epoch_start_time = function() {
+        epoch_start_time = getTime();
+    }
+    var update_epoch_end_time_and_duration = function() {
+        epoch_end_time = getTime();
+        time_to_train_epochs_array.push(epoch_end_time - epoch_start_time);
+    }
+
     var functions = {
 
         store_weights: function(weights_in_JSON_to_store) {
@@ -135,6 +151,9 @@ module.exports = function (model_training_batches) {
 
         get_and_update_batch_num: function () {
             var curr_batch = batch_num;
+            if (batch_num === 0)
+                update_epoch_start_time();
+
             console.log("<get_and_update_batch_num> sending batch_num = " + curr_batch + " (out of " + total_training_batches + ")");
             increase_batch_num();
             return curr_batch;
@@ -174,8 +193,9 @@ module.exports = function (model_training_batches) {
             bw_timings.length=0; bw_timings_sum=0;
             latencies_to_server.length=0; latencies_to_server_sum=0;
             latencies_from_server.length=0; latencies_from_server_sum=0;
+            time_to_train_epochs_array.length=0; epoch_start_time=0; epoch_end_time=0;
 
-            last_testing_accuracy=0, validation_accuracy=0;
+            last_validation_accuracy=0; testing_accuracy=0;
         },
         get_fw_timings_average : function() {
             if (fw_timings.length > 0)
@@ -208,7 +228,9 @@ module.exports = function (model_training_batches) {
             add_bw_timing(stats.bw_timings_average);
             add_latencies_to_server(stats.latency_to_server);
         },
-        is_new_validation_accuracy_better : function(new_testing_accuracy){
+        is_new_validation_accuracy_better : function(new_testing_accuracy, validation_epoch_num){
+            validation_accuracies_array[validation_epoch_num] = new_testing_accuracy;
+
             if (new_testing_accuracy > curr_testing_accuracy) {
                 curr_testing_accuracy = new_testing_accuracy;
                 return true;
@@ -219,14 +241,17 @@ module.exports = function (model_training_batches) {
         get_stats_in_csv : function() {
             var stats_in_csv="";
             var lines_in_csv = Math.max(fw_timings.length, bw_timings.length,
-                                latencies_to_server.length, latencies_from_server.length);
+                            latencies_to_server.length, latencies_from_server.length,
+                            time_to_train_epochs_array.length, validation_accuracies_array.length);
 
             // Headlines
-            stats_in_csv += "fw_times,"
-            stats_in_csv += "bw_times,"
-            stats_in_csv += "latencies_to_server,"
-            stats_in_csv += "latencies_from_server";
-            stats_in_csv += "\r\n,<newline>,"
+            stats_in_csv += "fw_times" + ",";
+            stats_in_csv += "bw_times" + ",";
+            stats_in_csv += "latencies_to_server" + ",";
+            stats_in_csv += "latencies_from_server" + ",";
+            stats_in_csv += "time_to_train_epochs" + ",";
+            stats_in_csv += "validation_accuracy";
+            stats_in_csv += "\n";
 
             // Data
             for (var i=0; i<lines_in_csv; i++) {
@@ -244,7 +269,16 @@ module.exports = function (model_training_batches) {
 
                 if (latencies_from_server[i]  !== undefined)
                     stats_in_csv += latencies_from_server[i] ;
-                stats_in_csv += ',<newline>,';
+                stats_in_csv += ",";
+
+                if (time_to_train_epochs_array[i]  !== undefined)
+                    stats_in_csv += time_to_train_epochs_array[i] ;
+                stats_in_csv += ",";
+
+                if (validation_accuracies_array[i]  !== undefined)
+                    stats_in_csv += validation_accuracies_array[i] ;
+
+                stats_in_csv += "\n";
             }
 
             return stats_in_csv;
