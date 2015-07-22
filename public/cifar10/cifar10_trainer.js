@@ -1,6 +1,6 @@
 var layer_defs, net, trainer;
 var old_net, curr_net, gradients_net;
-var samples_in_batch = 1000;
+var samples_in_training_batch = 1000; //random init
 var curr_model_ID = 0, curr_sample_num=-1;
 var is_net_loaded_from_server = false, is_training_active = false;
 var train_on_batch_interval;
@@ -61,8 +61,10 @@ var get_bw_timings_average = function () {
 var classes_txt = ['airplane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck'];
 var use_validation_data = true;
 
-function isNumeric(num) {
-    return !isNaN(num)
+
+var initialize_model_parameters = function(data) {
+    total_training_batches = data.total_training_batches;
+    samples_in_training_batch = data.samples_in_training_batch;
 }
 
 // int main
@@ -70,6 +72,11 @@ $(window).load(function() {
     client_ID = make_string_ID();
     change_client_name();
     console.log("Hello, I am trainer-client " + client_ID);
+    var AJAX_init_parameters = {model_name: "CIFAR10" };
+    $.get('/get_init_model_from_server', AJAX_init_parameters, function(data) {
+        console.log("Received init_parameters from server: \n" + data.init_model);
+        initialize_model_parameters(data);
+    });
 });
 
 // loads a training image and trains on it with the network
@@ -80,7 +87,7 @@ var train_on_batch = function() {
         var sample = sample_training_instance(curr_sample_num);
         step(sample, curr_sample_num); // process this image
         curr_sample_num++
-        if(curr_sample_num === 1000) {
+        if(curr_sample_num === samples_in_training_batch) {
             post_gradients_to_server();
             clearInterval(train_on_batch_interval);
         }
@@ -138,7 +145,7 @@ var sample_training_instance = function (sample_num) {
     //new_Vol = convnetjs.augment(new_Vol, 32, dx, dy, Math.random()<0.5); //maybe flip horizontally
 
     //var isval = use_validation_data && sample_num%10===0 ? true : false;
-    var label_num = curr_batch_num * samples_in_batch + sample_num;
+    var label_num = curr_batch_num * samples_in_training_batch + sample_num;
     return {x:new_Vol, label:labels[label_num]};
 }
 
@@ -190,7 +197,7 @@ var step = function(sample, sample_num) {
         //var t = 'Validation accuracy: ' + f2t(valAccWindow.get_average());
         //train_elt.appendChild(document.createTextNode(t));
         //train_elt.appendChild(document.createElement('br'));
-        var t = 'Examples seen (out of '+ samples_in_batch + "): " + sample_num;
+        var t = 'Examples seen (out of '+ samples_in_training_batch + "): " + sample_num;
         train_elt.appendChild(document.createTextNode(t));
         train_elt.appendChild(document.createElement('br'));
     }

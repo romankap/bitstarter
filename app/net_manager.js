@@ -12,8 +12,8 @@ function generate_random_number() {
     return Math.floor((Math.random() * 100000) + 1);
 }
 
-module.exports = function (tot_batches) {
-    var total_batches = tot_batches;
+module.exports = function (model_training_batches) {
+    var total_training_batches = model_training_batches;
     var weights, weights_in_JSON;
     var batch_num = 0;
     var model_ID = 0, init_model, last_model_ID_sent;
@@ -28,13 +28,12 @@ module.exports = function (tot_batches) {
 
     var increase_batch_num = function () {
         batch_num++;
-        if (batch_num === total_batches) {
-            epochs_count++;
-            console.log("<increase_batch_num> IT'S A NEW EPOCH, #" + epochs_count);
-        }
-        batch_num = batch_num % total_batches;
+        batch_num = batch_num % total_training_batches;
 
-        console.log("<increase_batch_num> NEW batch_num = " + batch_num + " (out of " + total_batches + ")");
+        if (batch_num === 0) {
+            epochs_count++;
+        }
+        console.log("<increase_batch_num> NEW batch_num = " + batch_num + " (out of " + total_training_batches + ")");
     };
 
     var gradients_calculator = {
@@ -136,12 +135,12 @@ module.exports = function (tot_batches) {
 
         get_and_update_batch_num: function () {
             var curr_batch = batch_num;
-            console.log("<get_and_update_batch_num> sending batch_num = " + curr_batch + " (out of " + total_batches + ")");
+            console.log("<get_and_update_batch_num> sending batch_num = " + curr_batch + " (out of " + total_training_batches + ")");
             increase_batch_num();
             return curr_batch;
         },
         get_train_batch_num: function() {
-            return total_batches - 1;
+            return total_training_batches - 1;
         },
         store_init_model: function(new_init_model) {
             init_model = new_init_model;

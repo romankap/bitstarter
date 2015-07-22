@@ -23,6 +23,10 @@ var classes_txt = ['airplane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'hor
 var use_validation_data = true;
 
 // Returns a random number in the range: [0, max_num-1]
+function isNumeric(num) {
+    return !isNaN(num)
+}
+
 var get_random_number = function (max_num) {
     return Math.floor((Math.random() * max_num));
 }
@@ -74,7 +78,7 @@ var load_data_batch = function(batch_to_load) {
     if (isNumeric(batch_to_load))
         data_img_elt.src = "https://s3.eu-central-1.amazonaws.com/bitstarter-dl/cifar10/cifar10_batch_" + batch_to_load + ".png";
     else //Either validation or testing batch
-        data_img_elt.src = "https://s3.eu-central-1.amazonaws.com/bitstarter-dl/cifar10/cifar10_" + batch_to_load + "_batch_.png";
+        data_img_elt.src = "https://s3.eu-central-1.amazonaws.com/bitstarter-dl/cifar10/cifar10_" + batch_to_load + "_batch.png";
 }
 
 // ------------------------
@@ -330,10 +334,7 @@ var visualize_activations = function(net, elt) {
     }
 }
 
-
-
-
-// user settings 
+// user settings
 var change_lr = function() {
     trainer.learning_rate = parseFloat(document.getElementById("lr_input").value);
     update_net_param_display();

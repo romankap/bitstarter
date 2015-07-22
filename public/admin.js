@@ -14,18 +14,20 @@ var classes_txt = ['airplane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'hor
 var use_validation_data = true;
 var first_execution = true;
 var check_net_accuracy_frequency = 10 * 1000;
-var test_batch_num = 50, validation_batch_num = 50; //TODO: change batch numbers and inputs accordingly
-var samples_in_test_batch = 1000, samples_in_validation_batch = 1000;
+var total_training_batches; //TODO: change batch numbers and inputs accordingly
+var samples_in_test_batch, samples_in_validation_batch;
 var get_validation_model_interval, validation_batch_interval;
 var get_testing_model_interval, testing_batch_interval;
-var get_net_accuracy = false;
+var get_net_accuracy = false, minimum_epochs_to_train;
 var is_validation_net_loaded_from_server = false, is_testing_net_loaded_from_server=false;
 var is_admin_in_testing_mode = false;
 
-/*$(function ()
-{
-    $.import_js('client.js');
-});*/
+var initialize_model_parameters = function(data) {
+    total_training_batches = data.total_training_batches;
+    samples_in_test_batch = data.samples_in_test_batch;
+    samples_in_validation_batch = data.samples_in_validation_batch;
+    minimum_epochs_to_train = data.minimum_epochs_to_train;
+}
 
 // int main
 $(window).load(function() {
@@ -35,6 +37,7 @@ $(window).load(function() {
     $.get('/get_init_model_from_server', AJAX_init_parameters, function(data) {
         console.log("Received an init_model from server: \n" + data.init_model);
 
+        initialize_model_parameters(data);
         init_model = data.init_model;
         $("#newnet").val(init_model);
         eval(init_model);
@@ -150,20 +153,22 @@ var update_contributing_clients = function(total_different_clients, last_contrib
     }
 }
 
-var label_num_in_validation_batch = function(sample_num_to_test) {
-    return validation_batch_num*samples_in_test_batch + sample_num_to_test;
+var label_num_in_validation_batch = function(sample_num_to_validate) {
+    return total_training_batches*samples_in_test_batch + sample_num_to_validate; //TODO: replace this line with the following
+    //return sample_num_to_validate;
 }
 
 
 var label_num_in_test_batch = function(sample_num_to_test) {
-    return test_batch_num*samples_in_test_batch + sample_num_to_test;
+    return total_training_batches*samples_in_test_batch + sample_num_to_test;//TODO: replace this line with the following
+    //return samples_in_validation_batch + sample_num_to_test; //test samples follow the validation samples
 }
 
 
 // sample a random testing instance
-var sample_image_instance = function(get_label_num ,sample_num_to_test) {
-    if (sample_num_to_test === undefined)
-        var sample_num_to_test = get_random_number(samples_in_test_batch);
+var sample_image_instance = function(get_label_num ,sample_num_to_predict) {
+    if (sample_num_to_predict === undefined)
+        var sample_num_to_predict = get_random_number(samples_in_test_batch);
 
     var p = img_data.data;
     var x = new convnetjs.Vol(32,32,3,0.0);
@@ -173,14 +178,14 @@ var sample_image_instance = function(get_label_num ,sample_num_to_test) {
         var i=0;
         for(var xc=0;xc<32;xc++) {
             for(var yc=0;yc<32;yc++) {
-                var ix = ((W * sample_num_to_test) + i) * 4 + dc;
+                var ix = ((W * sample_num_to_predict) + i) * 4 + dc;
                 x.set(yc,xc,dc,p[ix]/255.0-0.5);
                 i++;
             }
         }
     }
 
-    var label_index = get_label_num(sample_num_to_test);
+    var label_index = get_label_num(sample_num_to_predict);
     return {x:x, label:labels[label_index]};
 }
 
@@ -272,7 +277,7 @@ var get_net_and_current_training_batch_from_server = function() {
         if (data.batch_num == 0)
             curr_batch_num = 0;
         else
-            curr_batch_num = (data.batch_num-1) % test_batch_num;
+            curr_batch_num = (data.batch_num-1) % total_training_batches;
 
         console.log("<get_net_and_current_training_batch_from_server> Received "+ parameters.model_name + " model with model_ID: " +
                     data.model_ID + " and epoch_num " + data.epoch_num);

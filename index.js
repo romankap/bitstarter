@@ -53,15 +53,21 @@ app.get('/admin', function(request, response){
 //==========================================
 
 app.get('/get_init_model_from_server', function(request, response){
-    var params = {init_model: cifar10.net_manager.get_init_model()};//, net : cifar10.net_manager.get_weights()};
+    var params = {init_model: cifar10.net_manager.get_init_model(),
+                total_training_batches : cifar10.total_training_batches,
+                samples_in_training_batch: cifar10.samples_in_training_batch,
+                samples_in_testing_batch : cifar10.samples_in_testing_batch,
+                samples_in_validation_batch : cifar10.samples_in_validation_batch,
+                minimum_epochs_to_train : cifar10.minimum_epochs_to_train};
     response.send(params);
 });
 
 app.get('/get_net_and_update_batch_from_server', function(request, response){
     var model_parameters = cifar10.net_manager.get_model_parameters();
-    var parameters = {net : cifar10.net_manager.get_weights(), batch_num: cifar10.net_manager.get_and_update_batch_num(),
-                        epoch_num: cifar10.net_manager.get_epochs_count(),
-                        model_ID: cifar10.net_manager.get_model_ID(),learning_rate : model_parameters.learning_rate ,
+    var epoch_to_send = cifar10.net_manager.get_epochs_count();
+    var batch_to_send = cifar10.net_manager.get_and_update_batch_num();
+    var parameters = {net : cifar10.net_manager.get_weights(), batch_num: batch_to_send, epoch_num: epoch_to_send,
+                        model_ID: cifar10.net_manager.get_model_ID(),learning_rate : model_parameters.learning_rate,
                         momentum : model_parameters.momentum , l2_decay: model_parameters .l2_decay};
     //parameters = {net : cifar10.net_manager.get_weights()};
     console.log(" <get_net_and_update_batch_from_server> Sending batch_num: " + parameters.batch_num + " to client: " + request.query.client_ID);
