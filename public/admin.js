@@ -92,7 +92,10 @@ var get_testing_accuracy = function(){
 }
 
 var get_validation_model_from_server = function () {
-    get_net_and_current_training_batch_from_server();
+    if(get_net_accuracy)
+        get_net_and_current_training_batch_from_server();
+    else
+        clearInterval(get_validation_model_interval);
 }
 
 var validate_batch = function() {
