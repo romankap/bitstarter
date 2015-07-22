@@ -157,14 +157,14 @@ var stop_training_and_store_net = function() {
 
 }
 
-app.post('/store_testing_accuracy_on_server', function(request, response){
-    if (cifar10.net_manager.is_new_testing_accuracy_better(request.body.test_accuracy) && request.body.epoch_num < cifar10.minimum_epochs_to_train)
+app.post('/store_validation_accuracy_on_server', function(request, response){
+    if (cifar10.net_manager.is_new_validation_accuracy_better(request.body.test_accuracy) && request.body.epoch_num < cifar10.minimum_epochs_to_train)
     {
-        var res = {is_validation_needed: false};
+        var res = {is_testing_needed: false};
         response.send(res);
     }
     else {
-        var res = {is_validation_needed: true};
+        var res = {is_testing_needed: true};
         response.send(res);
         stop_training_and_store_net();
     }
