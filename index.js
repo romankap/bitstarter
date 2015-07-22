@@ -9,6 +9,8 @@ var config = require('./config');
 //var db = require('./app/db');
 var cifar10 = require('./app/models/cifar10');
 
+var is_model_in_testing_mode = false;
+
 var app = express();
 app.use(bodyParser.json({limit: '10mb'})); // support json encoded bodies
 app.use(bodyParser.urlencoded({ extended: true, limit: '10mb' })); // support encoded bodies
@@ -53,15 +55,21 @@ app.get('/admin', function(request, response){
 //==========================================
 
 app.get('/get_init_model_from_server', function(request, response){
-    var params = {init_model: cifar10.net_manager.get_init_model()};//, net : cifar10.net_manager.get_weights()};
+    var params = {init_model: cifar10.net_manager.get_init_model(),
+                total_training_batches : cifar10.total_training_batches,
+                samples_in_training_batch: cifar10.samples_in_training_batch,
+                samples_in_testing_batch : cifar10.samples_in_testing_batch,
+                samples_in_validation_batch : cifar10.samples_in_validation_batch,
+                minimum_epochs_to_train : cifar10.minimum_epochs_to_train};
     response.send(params);
 });
 
 app.get('/get_net_and_update_batch_from_server', function(request, response){
     var model_parameters = cifar10.net_manager.get_model_parameters();
-    var parameters = {net : cifar10.net_manager.get_weights(), batch_num: cifar10.net_manager.get_and_update_batch_num(),
-                        epoch_num: cifar10.net_manager.get_epochs_count(),
-                        model_ID: cifar10.net_manager.get_model_ID(),learning_rate : model_parameters.learning_rate ,
+    var epoch_to_send = cifar10.net_manager.get_epochs_count();
+    var batch_to_send = cifar10.net_manager.get_and_update_batch_num();
+    var parameters = {net : cifar10.net_manager.get_weights(), batch_num: batch_to_send, epoch_num: epoch_to_send,
+                        model_ID: cifar10.net_manager.get_model_ID(),learning_rate : model_parameters.learning_rate,
                         momentum : model_parameters.momentum , l2_decay: model_parameters .l2_decay};
     //parameters = {net : cifar10.net_manager.get_weights()};
     console.log(" <get_net_and_update_batch_from_server> Sending batch_num: " + parameters.batch_num + " to client: " + request.query.client_ID);
@@ -69,18 +77,31 @@ app.get('/get_net_and_update_batch_from_server', function(request, response){
     cifar10.net_manager.add_latencies_from_server(request.query.latency_from_server);
 });
 
-
-app.get('/get_net_and_batch_from_server', function(request, response){
-    var model_parameters = cifar10.net_manager.get_model_parameters();
-    var parameters = {net : cifar10.net_manager.get_weights(), batch_num: cifar10.net_manager.get_batch_num(),
+// To be used by the Admin
+app.get('/get_net_and_current_training_batch_from_server', function(request, response){
+    if (cifar10.net_manager.is_need_to_send_net_for_testing(request.query.model_ID, request.query.epoch_num)) {
+        var model_parameters = cifar10.net_manager.get_model_parameters();
+        var parameters = {net : cifar10.net_manager.get_weights(), batch_num: cifar10.net_manager.get_batch_num(),
                         epoch_num: cifar10.net_manager.get_epochs_count(),
                         model_ID: cifar10.net_manager.get_model_ID(),learning_rate : model_parameters.learning_rate,
                         momentum : model_parameters.momentum , l2_decay: model_parameters .l2_decay,
                         total_different_clients: cifar10.net_manager.get_different_clients_num(),
                         last_contributing_client: cifar10.net_manager.get_last_contributing_client()};
-    //parameters = {net : cifar10.net_manager.get_weights()};
+
+        console.log(" <get_net_and_current_training_batch_from_server> sending net with model_ID " + parameters.model_ID +
+                        " and in epoch_num " + parameters.epoch_num + " to Admin");
+    }
+    else {
+        var parameters = {batch_num: cifar10.net_manager.get_batch_num(),
+                        epoch_num: cifar10.net_manager.get_epochs_count(),
+                        model_ID: cifar10.net_manager.get_model_ID(),
+                        total_different_clients: cifar10.net_manager.get_different_clients_num(),
+                        last_contributing_client: cifar10.net_manager.get_last_contributing_client()};
+
+        console.log(" <get_net_and_current_training_batch_from_server> NOT sending net to Admin. Model_ID " + parameters.model_ID +
+                        " & epoch_num " + parameters.epoch_num + " didn't update");
+    }
     response.send(parameters);
-    console.log(" <get_net_and_batch_from_server> sent net with model_ID: " + parameters.model_ID + " to Admin");
 });
 
 app.get('/get_average_stats', function(request, response) {
@@ -91,7 +112,7 @@ app.get('/get_average_stats', function(request, response) {
 });
 
 app.get('/get_all_stats', function(request, response) {
-    var stats_in_csv = { stats_in_csv : cifar10.net_manager.get_stats_in_csv()};
+    var stats_in_csv = cifar10.net_manager.get_stats_in_csv();
 
     response.send(stats_in_csv);
     console.log("<get_all_stats> all sent stats to requester in CSV");
@@ -105,7 +126,7 @@ app.get('/get_batch_num_from_server', function(request, response) {
 
 app.post('/update_model_from_gradients', function(request, response){
     var model_ID_from_client = request.body.model_ID;
-    if (model_ID_from_client == cifar10.net_manager.get_model_ID()) {
+    if (model_ID_from_client == cifar10.net_manager.get_model_ID() && !is_model_in_testing_mode) {
         //Expecting to receive JSON of the form: {model_name: <model name>, net: <net in JSON>}
         var model_name = request.body.model_name;
         console.log("<store_weights_on_server()> updating model_name: " + model_name + " with model_ID: " +
@@ -118,8 +139,14 @@ app.post('/update_model_from_gradients', function(request, response){
         cifar10.net_manager.update_stats(request.body);
     }
     else {
-        response.send("<update_model_from_gradients> Old model_ID, gradients were discarded ");
-        console.log("<update_model_from_gradients> Received results from an old model_ID " + model_ID_from_client + ", discarding...");
+        if (is_model_in_testing_mode) {
+            response.send("<update_model_from_gradients> Server in testing mode, stopped updating the model ");
+            console.log("<update_model_from_gradients> Server in testing mode, stopped updating the model ");
+        }
+        else {
+            response.send("<update_model_from_gradients> Old model_ID, gradients were discarded ");
+            console.log("<update_model_from_gradients> Received results from an old model_ID " + model_ID_from_client + ", discarding...");
+        }
     }
 });
 
@@ -129,6 +156,7 @@ app.post('/reset_model', function(request, response){
     response.send("Model was " + request.body.model_name + " resetted. New model_ID: " + new_model_ID);
     console.log("<reset_model> Resetting the net to:\n" + cifar10.net_manager.get_init_model());
     console.log("<reset_model> Model was " + request.body.model_name + " resetted. New model_ID: " + new_model_ID);
+    is_model_in_testing_mode = false;
 });
 
 app.post('/store_new_model_on_server', function(request, response){
@@ -138,6 +166,41 @@ app.post('/store_new_model_on_server', function(request, response){
 
     console.log("<store_new_model_on_server> Received new_init_model " + request.body.new_init_model);
     console.log("<store_new_model_on_server> Model " + request.body.model_name + " was changed and saved. New model_ID: " + new_model_ID);
+});
+
+app.post('/store_validation_accuracy_on_server', function(request, response){
+    if (cifar10.net_manager.is_new_validation_accuracy_worse(request.body.validation_accuracy, request.body.epoch_num)
+            && request.body.epoch_num > cifar10.minimum_epochs_to_train) {
+        var res = {is_testing_needed: true};
+        response.send(res);
+        is_model_in_testing_mode = true;
+        console.log("<store_validation_accuracy_on_server> Received new validation accuracy: "
+            + request.body.validation_accuracy + "==> +++ Going to TESTING mode");
+    }
+    else {
+        var res = {is_testing_needed: false};
+        response.send(res);
+        console.log("<store_validation_accuracy_on_server> Received new validation accuracy: "
+            + request.body.validation_accuracy + "==> Staying in validation mode");
+    }
+});
+
+app.get('/get_validation_net', function(request, response) {
+    var model_parameters = cifar10.net_manager.get_model_parameters();
+    var parameters = {net : cifar10.net_manager.get_weights(), batch_num: cifar10.net_manager.get_batch_num(),
+        epoch_num: cifar10.net_manager.get_epochs_count(),
+        model_ID: cifar10.net_manager.get_model_ID(),learning_rate : model_parameters.learning_rate,
+        momentum : model_parameters.momentum , l2_decay: model_parameters .l2_decay,
+        total_different_clients: cifar10.net_manager.get_different_clients_num(),
+        last_contributing_client: cifar10.net_manager.get_last_contributing_client()};
+
+    response.send(parameters);
+});
+
+app.get('/get_net_snapshot', function(request, response) {
+    var net_in_JSON_to_send = net.toJSON();
+
+    response.send(net_in_JSON_to_send);
 });
 
 // ====== Default case ========

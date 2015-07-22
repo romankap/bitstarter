@@ -133,14 +133,6 @@ p {
 	color: #fff;
 	font-size: 20px;
 	
-	background: #e58f2d; /* Old browsers */
-	background: -moz-linear-gradient(top, #e58f2d 0%, #d3ac89 100%); /* FF3.6+ */
-	background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,#e58f2d), color-stop(100%,#d3ac89)); /* Chrome,Safari4+ */
-	background: -webkit-linear-gradient(top, #e58f2d 0%,#d3ac89 100%); /* Chrome10+,Safari5.1+ */
-	background: -o-linear-gradient(top, #e58f2d 0%,#d3ac89 100%); /* Opera 11.10+ */
-	background: -ms-linear-gradient(top, #e58f2d 0%,#d3ac89 100%); /* IE10+ */
-	background: linear-gradient(to bottom, #e58f2d 0%,#d3ac89 100%); /* W3C */
-	
 	padding: 10px 20px;
     margin-bottom: 10px;
 	border-radius: 10px;
@@ -152,4 +144,20 @@ p {
 
 .points {
 	margin-top: 100px;
+}
+
+#restart-checkbox-div label {
+    display: block;
+    padding-left: 15px;
+    text-indent: -15px;
+}
+#restart-checkbox-div input {
+    width: 13px;
+    height: 13px;
+    padding: 0;
+    margin:0;
+    vertical-align: bottom;
+    position: relative;
+    top: -1px;
+    *overflow: hidden;
 }

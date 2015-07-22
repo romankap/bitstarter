@@ -1,9 +1,8 @@
 var net, trainer;
 var client_ID, curr_batch_num=-1, curr_epoch_num;
-var num_batches = 51; // 50 training batches, 1 test
-var test_batch = 50;
 var data_img_elt; //TODO: make this a single element instead of an array
 var img_data// = new Array(num_batches);
+var samples_in_training_batch = 1000; //random init
 
 var lossGraph = new cnnvis.Graph();
 var xLossWindow = new cnnutil.Window(100);
@@ -12,7 +11,7 @@ var trainAccWindow = new cnnutil.Window(100);
 var valAccWindow = new cnnutil.Window(100);
 var testAccWindow = new cnnutil.Window(50, 1);
 
-var is_batch_loaded;// = new Array(num_batches);
+var is_batch_loaded;
 //var loaded_train_batch = [];
 var init_model;
 // ------------------------
@@ -23,6 +22,10 @@ var classes_txt = ['airplane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'hor
 var use_validation_data = true;
 
 // Returns a random number in the range: [0, max_num-1]
+function isNumeric(num) {
+    return !isNaN(num)
+}
+
 var get_random_number = function (max_num) {
     return Math.floor((Math.random() * max_num));
 }
@@ -71,7 +74,12 @@ var load_data_batch = function(batch_to_load) {
         is_batch_loaded = true;
         console.log('finished loading data batch ' + batch_to_load);
     }
-    data_img_elt.src = "https://s3.eu-central-1.amazonaws.com/bitstarter-dl/cifar10/cifar10_batch_" + batch_to_load + ".png";
+    if (isNumeric(batch_to_load))
+        data_img_elt.src = "https://s3.eu-central-1.amazonaws.com/bitstarter-dl/cifar10/" +  samples_in_training_batch
+                            + "/cifar10_batch_" + batch_to_load + ".png";
+    else //Either validation or testing batch
+        data_img_elt.src = "https://s3.eu-central-1.amazonaws.com/bitstarter-dl/cifar10/" + samples_in_training_batch
+                            + "/cifar10_admin.png";
 }
 
 // ------------------------
@@ -224,6 +232,7 @@ var visualize_activations = function(net, elt) {
         }
 
         // visualize data gradients
+        /*
         if(L.layer_type !== 'softmax' && L.layer_type !== 'input' ) {
             var grad_div = document.createElement('div');
             grad_div.appendChild(document.createTextNode('Activation Gradients:'));
@@ -234,6 +243,7 @@ var visualize_activations = function(net, elt) {
             draw_activations(grad_div, L.out_act, scale, true);
             activations_div.appendChild(grad_div);
         }
+        */
 
         // visualize filters if they are of reasonable size
         if(L.layer_type === 'conv') {
@@ -253,6 +263,7 @@ var visualize_activations = function(net, elt) {
                     }
                 }
                 // gradients
+                /*
                 filters_div.appendChild(document.createElement('br'));
                 filters_div.appendChild(document.createTextNode('Weight Gradients:'));
                 filters_div.appendChild(document.createElement('br'));
@@ -263,7 +274,7 @@ var visualize_activations = function(net, elt) {
                         draw_activations(filters_div, L.filters[j], 2, true);
                         filters_div.appendChild(document.createTextNode(')'));
                     }
-                }
+                }*/
             } else {
                 filters_div.appendChild(document.createTextNode('Weights hidden, too small'));
             }
@@ -324,10 +335,7 @@ var visualize_activations = function(net, elt) {
     }
 }
 
-
-
-
-// user settings 
+// user settings
 var change_lr = function() {
     trainer.learning_rate = parseFloat(document.getElementById("lr_input").value);
     update_net_param_display();
