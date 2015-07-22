@@ -1,52 +1,64 @@
 var net, trainer;
-var client_ID, curr_batch_num=-1;
-var num_batches = 51; // 50 training batches, 1 test
-var test_batch = 50;
-var data_img_elt; //TODO: make this a single element instead of an array
-var img_data// = new Array(num_batches);
 
-var is_batch_loaded;// = new Array(num_batches);
-//var loaded_train_batch = [];
-var init_model;
-// ------------------------
-// BEGIN CIFAR10 SPECIFIC STUFF
-// ------------------------
-var classes_txt = ['airplane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck'];
+var data_img_elt;
+var img_data;
 
-var use_validation_data = true;
+
+var client_name;
+
+var is_batch_loaded;
+var curr_batch_num;
+
+var model_id;
+
+var paused = true;
+
+var old_net;
+
+var curr_sample_num;
+var is_net_loaded_from_server = false, is_training_active = false;
+var train_on_batch_interval;    // Interval identifier
+
+var gradients_calculator = {
+    traverse: function (new_net_property, old_net_property, prev_property) {
+        debug_global_counter = 0;
+
+        for (var i in new_net_property) {
+            if (new_net_property[i] !== null && typeof(new_net_property[i]) == "object") {
+                //going on step down in the object tree!!
+                this.traverse(new_net_property[i], old_net_property[i], i);
+            }
+            else if (new_net_property[i] !== null && typeof(new_net_property[i]) !== "object" &&
+                    old_net_property[i] !== null && typeof(old_net_property[i]) !== "object" &&
+                    new_net_property[i] !== NaN && old_net_property[i] !== NaN &&
+                    prev_property == 'w' && isNumeric(i)) {
+                new_net_property[i] -= old_net_property[i];
+            }
+        }
+    }
+}
+
+function isNumeric(num) {
+    return !isNaN(num)
+}
 
 // Returns a random number in the range: [0, max_num-1]
 var get_random_number = function (max_num) {
     return Math.floor((Math.random() * max_num));
 }
 
-var make_string_ID = function ()
-{
-    var text = "";
-    var consonants = "AEIOU";
-    var vowels = "BCDFGJKLMNPQRSTVWYZ";
-
-    for( var i=0; i < 4; i++ ) {
-        if (i % 2 == 0)
-            text += vowels.charAt(Math.floor(Math.random() * vowels.length));
-        else
-            text += consonants.charAt(Math.floor(Math.random() * consonants.length));
-    }
-
-    return text;
-}
-
-var change_client_name = function() {
-    $('#client-name').html("Hello trainer-client " + client_ID);
+var update_client_name = function() {
+    $('#client-name').html("Hello trainer-node #" + client_name);
 }
 
 var update_displayed_batch_num = function(new_batch_num) {
     $('#batch-num').html("Training on batch #" + new_batch_num);
 }
 
-var load_data_batch = function(batch_to_load) {
+var load_data_batch = function(batch_url) {
     // Load the dataset with JS in background
-    is_batch_loaded = false;
+    if(is_batch_loaded) return;
+
     data_img_elt = new Image();
     data_img_elt.crossOrigin = 'anonymous';
 
@@ -58,14 +70,11 @@ var load_data_batch = function(batch_to_load) {
         data_ctx.drawImage(data_img_elt, 0, 0); // copy it over... bit wasteful :(
         img_data = data_ctx.getImageData(0, 0, data_img_elt.width, data_img_elt.height);
         is_batch_loaded = true;
-        console.log('finished loading data batch ' + batch_to_load);
+        console.log('Finished loading data batch #' + batch_url);
     }
-    data_img_elt.src = "https://s3.eu-central-1.amazonaws.com/bitstarter-dl/cifar10/cifar10_batch_" + batch_to_load + ".png";
-}
 
-// ------------------------
-// END MNIST SPECIFIC STUFF
-// ------------------------
+    data_img_elt.src = batch_url;
+}
 
 var maxmin = cnnutil.maxmin;
 var f2t = cnnutil.f2t;
@@ -75,7 +84,6 @@ var f2t = cnnutil.f2t;
 // scale is a multiplier to make the visualizations larger. Make higher for larger pictures
 // if grads is true then gradients are used instead
 var draw_activations = function(elt, A, scale, grads) {
-
     var s = scale || 2; // scale
     var draw_grads = false;
     if(typeof(grads) !== 'undefined') draw_grads = grads;
@@ -313,9 +321,6 @@ var visualize_activations = function(net, elt) {
     }
 }
 
-
-
-
 var lossGraph = new cnnvis.Graph();
 var xLossWindow = new cnnutil.Window(100);
 var wLossWindow = new cnnutil.Window(100);
@@ -323,24 +328,6 @@ var trainAccWindow = new cnnutil.Window(100);
 var valAccWindow = new cnnutil.Window(100);
 var testAccWindow = new cnnutil.Window(50, 1);
 
-
-// user settings 
-var change_lr = function() {
-    trainer.learning_rate = parseFloat(document.getElementById("lr_input").value);
-    update_net_param_display();
-}
-var change_momentum = function() {
-    trainer.momentum = parseFloat(document.getElementById("momentum_input").value);
-    update_net_param_display();
-}
-var change_batch_size = function() {
-    trainer.batch_size = parseFloat(document.getElementById("batch_size_input").value);
-    update_net_param_display();
-}
-var change_decay = function() {
-    trainer.l2_decay = parseFloat(document.getElementById("decay_input").value);
-    update_net_param_display();
-}
 var update_net_param_display = function() {
     document.getElementById('lr_input').value = trainer.learning_rate;
     document.getElementById('momentum_input').value = trainer.momentum;
@@ -348,17 +335,15 @@ var update_net_param_display = function() {
     document.getElementById('decay_input').value = trainer.l2_decay;
 }
 
-
-var dump_json = function() {
-    document.getElementById("dumpjson").value = JSON.stringify(this.net.toJSON());
-}
 var clear_graph = function() {
     lossGraph = new cnnvis.Graph(); // reinit graph too
 }
-var reset_all = function() {
-    // reinit trainer
-    trainer = new convnetjs.SGDTrainer(net, {learning_rate:trainer.learning_rate, momentum:trainer.momentum, batch_size:trainer.batch_size, l2_decay:trainer.l2_decay});
-    update_net_param_display();
+
+var reset_all = function() {    // Just reset any visual cues of doing anything
+    is_net_loaded_from_server = false;
+    is_batch_loaded = false;
+    is_training_active = false;
+    curr_sample_num = 0;
 
     // reinit windows that keep track of val/train accuracies
     xLossWindow.reset();
@@ -367,33 +352,204 @@ var reset_all = function() {
     valAccWindow.reset();
     testAccWindow.reset();
     lossGraph = new cnnvis.Graph(); // reinit graph too
-    step_num = 0;
-}
-var load_from_json = function(jsonString) {
-    var json = JSON.parse(jsonString);
-    net = new convnetjs.Net();
-    net.fromJSON(json);
-    reset_all();
 }
 
-var load_pretrained = function() {
-    $.getJSON("cifar10/cifar10_snapshot.json", function(json){
+
+var start_client = function() {
+    $.get('/start_client', function(data) {
+        console.log("<start_client> Got net and parameters, starting to work on batch_num: " + data.batch_num);
+        curr_batch_num = data.batch_num;
+        load_data_batch(curr_batch_num);
+        update_displayed_batch_num(curr_batch_num);
+    });
+}
+
+
+
+var init_all = function() {
+    var parameters = {  client_ID: client_name };
+
+    $.get('/get_net_batch_all', parameters, function(data) {
+        curr_batch_num = data.batch_num;
+        batch_size = data.batch_size;
+
+        load_data_batch(data.batch_url);
+        update_displayed_batch_num(curr_batch_num);
+
+        if(net != undefined) {
+          old_net = net;
+        }
         net = new convnetjs.Net();
-        net.fromJSON(json);
-        trainer.learning_rate = 0.0001;
-        trainer.momentum = 0.9;
-        trainer.batch_size = 2;
-        trainer.l2_decay = 0.00001;
-        reset_all();
+        net.fromJSON(data.net);
+        if(model_id != data.model_ID) {
+          $.getScript(data.model_name + '/labels.js');
+        }
+        model_id  = data.model_ID;
+
+        is_net_loaded_from_server = true;
+        trainer = new convnetjs.SGDTrainer(net, data.trainer_param);
+
+
+        console.log("<init_all> Received " + parameters.model_name + " net back. model_ID: " + data.model_ID);
+        console.log("<init_all> Working on batch: " + data.batch_num); //DEBUG
+        console.log("<init_all> Received " + data.net.length + " net in length back"); //DEBUG
     });
 }
 
+var post_gradients_to_server = function() {
+  is_training_active = false;
 
+  var gradients = net;
+  if(old_net != undefined) {
+    gradients_calculator.traverse(gradients, old_net, "");
+  }
+  console.log(gradients);
 
-var get_batch_num_from_server = function() {
-    var parameters = {model_name: "CIFAR10" };
-    $.get('/get_batch_num_from_server', parameters, function(data) {
-        console.log("<get_batch_num_from_server> Starting to work on batch_num: " + data.batch_num);
-        return data.batch_num;
-    });
+  var parameters = {
+                      net: JSON.stringify(gradients),
+                      model_ID: model_id,
+                      client_ID: client_name,
+                  };
+
+  console.log("Sending net_in_JSON with length " + parameters.net.length);
+
+  $.post('/update_model_from_gradients', parameters, function(data) {
+      console.log(data);
+  });
 }
+
+var start_working = function() {
+    if (is_net_loaded_from_server && is_batch_loaded) {
+        is_training_active = true;
+        curr_sample_num = 0;
+        train_on_batch_interval = setTimeout(train_on_batch, 0);
+        console.log('Starting to work!');
+    }
+    else {
+        setTimeout(start_working, 200);
+    }
+}
+
+var train_on_batch = function() {
+    if (is_training_active) {
+        var sample = sample_training_instance(curr_sample_num);
+        step(sample, curr_sample_num); // process this image
+        curr_sample_num++
+        setTimeout(train_on_batch, 0);
+        if(curr_sample_num == batch_size) {
+            post_gradients_to_server();
+            reset_all();
+            if(!paused) {
+              init_all();
+              setTimeout(start_working, 0);
+            }
+        }
+    }
+}
+
+var sample_training_instance = function (sample_num) {
+    // fetch the appropriate row of the training image and reshape into a Vol
+    var p = img_data.data;
+    var new_Vol = new convnetjs.Vol(32,32,3,0.0);
+    var W = 32*32;
+    var j=0;
+    for(var dc=0;dc<3;dc++) {
+        var i=0;
+        for(var xc=0;xc<32;xc++) {
+            for(var yc=0;yc<32;yc++) {
+                var ix = ((W * sample_num) + i) * 4 + dc;
+                new_Vol.set(yc,xc,dc,p[ix]/255.0-0.5);
+                i++;
+            }
+        }
+    }
+    var dx = Math.floor(Math.random()*5-2);
+    var dy = Math.floor(Math.random()*5-2);
+    new_Vol = convnetjs.augment(new_Vol, 32, dx, dy, Math.random()<0.5); //maybe flip horizontally
+
+    var label_num = curr_batch_num * batch_size + sample_num;
+    return {x:new_Vol, label:labels[label_num]};
+}
+
+var step = function(sample, sample_num) {
+
+    var x = sample.x;
+    var y = sample.label;
+
+    // train on it with network
+    var stats = trainer.train(x, y);
+    var lossx = stats.cost_loss;
+    var lossw = stats.l2_decay_loss;
+
+    // keep track of stats such as the average training error and loss
+    var yhat = net.getPrediction();
+    var train_acc = yhat === y ? 1.0 : 0.0;
+    xLossWindow.add(lossx);
+    wLossWindow.add(lossw);
+    trainAccWindow.add(train_acc);
+
+    // visualize training status
+    var train_elt = document.getElementById("trainstats");
+    train_elt.innerHTML = '';
+    var t = 'Forward time per example: ' + stats.fwd_time + 'ms';
+    train_elt.appendChild(document.createTextNode(t));
+    train_elt.appendChild(document.createElement('br'));
+    var t = 'Backprop time per example: ' + stats.bwd_time + 'ms';
+    train_elt.appendChild(document.createTextNode(t));
+    train_elt.appendChild(document.createElement('br'));
+    var t = 'Classification loss: ' + f2t(xLossWindow.get_average());
+    train_elt.appendChild(document.createTextNode(t));
+    train_elt.appendChild(document.createElement('br'));
+    var t = 'L2 Weight decay loss: ' + f2t(wLossWindow.get_average());
+    train_elt.appendChild(document.createTextNode(t));
+    train_elt.appendChild(document.createElement('br'));
+    var t = 'Training accuracy: ' + f2t(trainAccWindow.get_average());
+    train_elt.appendChild(document.createTextNode(t));
+    train_elt.appendChild(document.createElement('br'));
+    var t = 'Validation accuracy: ' + f2t(valAccWindow.get_average());
+    train_elt.appendChild(document.createTextNode(t));
+    train_elt.appendChild(document.createElement('br'));
+    var t = 'Examples seen (out of '+ batch_size + "): " + sample_num;
+    train_elt.appendChild(document.createTextNode(t));
+    train_elt.appendChild(document.createElement('br'));
+
+    // visualize activations
+/*    if(sample_num % 100 === 0) {
+        var vis_elt = document.getElementById("visnet");
+        visualize_activations(net, vis_elt);
+    }
+
+    // log progress to graph, (full loss)
+    if(sample_num % 200 === 0) {
+        var xa = xLossWindow.get_average();
+        var xw = wLossWindow.get_average();
+        if(xa >= 0 && xw >= 0) { // if they are -1 it means not enough data was accumulated yet for estimates
+            lossGraph.add(step_num, xa + xw);
+            lossGraph.drawSelf(document.getElementById("lossgraph"));
+        }
+    }*/
+}
+
+var compute = function() {
+    paused = !paused;
+
+    var btn = document.getElementById('compute-btn');
+    if (paused) {
+        btn.value = 'Compute';
+        clearInterval(train_on_batch_interval);
+        post_gradients_to_server();
+    }
+    else {
+        btn.value = 'Pause';
+        init_all();
+        start_working();
+    }
+}
+// int main
+$(window).load(function() {
+    $.get('/get_node_name', function(data) {
+        client_name = data;
+        update_client_name();
+        document.getElementById('compute-btn').disabled = false;
+    });
+});

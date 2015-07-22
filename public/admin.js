@@ -2,10 +2,6 @@ var layer_defs, net, trainer;
 var curr_model_ID;
 var curr_sample_num;
 
-// ------------------------
-// BEGIN CIFAR10 SPECIFIC STUFF
-// ------------------------
-var classes_txt = ['airplane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck'];
 
 var use_validation_data = true;
 var first_execution = true;
@@ -15,18 +11,14 @@ var samples_in_test_batch = 1000;
 var validation_interval, validate_batch_interval;
 var get_validations = false, is_net_loaded_from_server = false;
 
-/*$(function ()
-{
-    $.import_js('client.js');
-});*/
+var dataset_id;
+
 
 // int main
 $(window).load(function() {
-    console.log("Hello Admin, your wish is net's command");
-    load_data_batch(validation_batch_num);
-    var AJAX_init_parameters = {model_name: "CIFAR10" };
-    $.get('/get_init_model_from_server', AJAX_init_parameters, function(data) {
-        console.log("Received an init_model from server: \n" + data.init_model);
+    // load_data_batch(validation_batch_num);
+    $.get('/get_base_model_from_server', function(data) {
+        console.log("Received an base_model from server: \n" + data.init_model);
 
         init_model = data.init_model;
         $("#newnet").val(init_model);
@@ -36,10 +28,6 @@ $(window).load(function() {
         update_net_param_display();
 
         is_batch_loaded = false;
-
-        //load_data_batch(0); // async load train set batch 0 (6 total train batches)
-        //load_data_batch(test_batch); // async load test set (batch 6)
-        //start_fun();
     });
 });
 

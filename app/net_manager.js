@@ -1,6 +1,7 @@
 /**
  * Created by Roman on 05/07/2015.
  */
+var convnetjs = require('convnetjs');
 
 function isNumeric(num) {
     return !isNaN(num)
@@ -10,97 +11,122 @@ function generate_random_number() {
     return Math.floor((Math.random() * 100000) + 1);
 }
 
-module.exports = function (tot_batches) {
-    var weights;
-    var weights_in_JSON;
-    var batch_num = 0;
-    var total_batches = tot_batches;
-    var model_ID = 0;
-    var init_model;
-
-    var increase_batch_num = function () {
-        batch_num++;
-        batch_num = batch_num % total_batches;
-
-        console.log("<increase_batch_num> NEW batch_num = " + batch_num + " (out of " + total_batches + ")");
-    };
-
-    var gradients_calculator = {
-        traverse: function (net_weight, gradient, property_name) {
-            for (var i in gradient) {
-                if (gradient[i] !== null && typeof(gradient[i]) == "object") {
-                    //going on step down in the object tree!!
-                    this.traverse(net_weight[i], gradient[i], property_name + "." + i);
-                }
-                else if (gradient[i] !== null && typeof(gradient[i]) !== "object" &&
-                        net_weight[i] !== null && typeof(net_weight[i]) !== "object" &&
-                        net_weight[i] !== NaN && gradient[i] !== NaN &&
-                        isNumeric(i) ) {
-                    net_weight[i] += gradient[i];
-                }
+var gradients_calculator = {
+    traverse: function (net_weight, gradient, property_name) {
+        for (var i in gradient) {
+            if (gradient[i] !== null && typeof(gradient[i]) == "object") {
+                //going on step down in the object tree!!
+                this.traverse(net_weight[i], gradient[i], property_name + "." + i);
+            }
+            else if (gradient[i] !== null && typeof(gradient[i]) !== "object" &&
+                    net_weight[i] !== null && typeof(net_weight[i]) !== "object" &&
+                    net_weight[i] !== NaN && gradient[i] !== NaN &&
+                    isNumeric(i) ) {
+                net_weight[i] += gradient[i];
             }
         }
-    };
+    }
+};
 
-    var add_gradients = function(weights_in_JSON, gradients_in_JSON) {
-        gradients_calculator.traverse(weights_in_JSON, gradients_in_JSON, "");
-    };
+var add_gradients = function(weights_in_JSON, gradients_in_JSON) {
+    gradients_calculator.traverse(weights_in_JSON, gradients_in_JSON, "");
+};
 
-    var functions = {
+var net;          // Most updated netowrk
+var dataset;      // Currently used datastet
 
-        store_weights: function(weights_in_JSON_to_store) {
-            weights_in_JSON = weights_in_JSON_to_store;
-            weights = JSON.stringify(weights_in_JSON);
-        },
+var model_id;     // Identifier of running model
+var last_batch;
+var total_batches;
+var batch_size;
 
-        update_model_from_gradients: function(model_from_client) {
-            trainer.learning_rate = model_from_client.learning_rate;
-            trainer.momentum = model_from_client.momentum;
-            trainer.l2_decay = model_from_client.l2_decay;
+var trainer_param;
 
-            var gradients = model_from_client.net;
-            var gradients_in_JSON = JSON.parse(gradients);
+module.exports = {
+    get_net: function() {
+        return net;
+    },
 
-            add_gradients(weights_in_JSON, gradients_in_JSON);
-            weights = JSON.stringify(weights_in_JSON);
-        },
+    get_dataset_name: function() {
+      return dataset.name;
+    },
 
-        get_weights: function() {
-            return weights;
-        },
-        get_model_parameters: function() {
-            var params = {learning_rate: trainer.learning_rate, momentum: trainer.momentum, l2_decay: trainer.l2_decay };
-            return params;
-        },
-        get_batch_num: function () {
-            return batch_num;
-        },
-        reset_batch_num: function () {
-            batch_num = 0;
-        },
-        generate_new_model_ID: function() {
-            model_ID = generate_random_number();
-        },
-        get_model_ID: function() {
-            return model_ID;
-        },
+    get_model_parameters: function() {
+        return trainer_param;
+    },
 
-        get_and_update_batch_num: function () {
-            var curr_batch = batch_num;
-            console.log("<get_and_update_batch_num> sending batch_num = " + curr_batch + " (out of " + total_batches + ")");
-            increase_batch_num();
-            return curr_batch;
-        },
-        get_train_batch_num: function() {
-            return total_batches - 1;
-        },
-        store_init_model: function(new_init_model) {
-            init_model = new_init_model;
-        },
-        get_init_model: function() {
-            return init_model;
-        }
-    };
+    get_batch_size: function () {
+        return batch_size;
+    },
 
-    return functions;
+    get_model_ID: function() {
+        return model_id;
+    },
+
+    get_train_batch_num: function() {
+        return total_batches - 1;
+    },
+
+    get_base_model: function() {
+        return {
+            base_net: net,
+            id: model_ID,
+            dataset: dataset.name
+        };
+    },
+
+    get_batch_url: function(batch_num) {
+      return dataset.gen_batch_url(batch_num);
+    },
+
+    set_net: function(new_net) {
+        net = new_net;
+    },
+
+    add_gradients: function(update_net) {
+        add_gradients(net, update_net);
+    },
+
+    update_model_from_gradients: function(model_from_client) {
+          var gradients = JSON.parse(model_from_client.net);
+
+          add_gradients(net, JSON.parse(model_from_client.net));
+      },
+
+    request_batch_num: function (client) {
+        var curr_batch = last_batch;
+        console.log("<request_batch_num> sending batch_num " + curr_batch
+            + " (out of " + total_batches + ") to node #" + client);
+        last_batch++;
+        last_batch = last_batch % total_batches;
+        return curr_batch;
+    },
+
+    reset_batch_num: function () {
+        last_batch = 0;
+    },
+
+    generate_new_model_ID: function() {
+        model_ID = generate_random_number();
+        return model_ID;
+    },
+
+    get_trainer_param: function() {
+        return trainer_param;
+    },
+
+    set_dataset: function(dataset_i) {
+        dataset = require('./models/' + dataset_i + '.js');
+
+        eval(dataset.init_def);
+        model_id = this.generate_new_model_ID();
+        total_batches = dataset.total_batches;
+        batch_size = dataset.batch_size;
+        last_batch = 0;
+        trainer_param = {
+          learning_rate: trainer.learning_rate,
+          momentum: trainer.momentum,
+          l2_decay: trainer.l2_decay,
+        };
+    }
 };

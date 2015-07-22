@@ -4,36 +4,34 @@ var compress = require('compression');
 var morgan = require('morgan');
 var http = require('http');
 var fs = require('fs');
-//var mongoose = require('mongoose');
 var config = require('./config');
-//var db = require('./app/db');
-var cifar10 = require('./app/models/cifar10');
+
+var DEFAULT_DATASET = "cifar10";
+
+// Init. default net
+var net_manager = require('./app/net_manager');
+net_manager.set_dataset(DEFAULT_DATASET);
+
+var node_count = 0;
 
 var app = express();
 app.use(bodyParser.json({limit: '10mb'})); // support json encoded bodies
 app.use(bodyParser.urlencoded({ extended: true, limit: '10mb' })); // support encoded bodies
 app.use(compress());
 
-//var user = new db.create_user('Roman', 'Kaplan', "some@one.com");
-//console.log("created user:" + user.firstname);
-//db.add_user(user);
-//db.find_user('Roman');
-
 // Serve HTTP requests
 app.set('port', (process.env.PORT || 8080));
 app.use(express.static(__dirname + '/public'));
 
-/////// =====================
+/////// =======  Accessible pages  =========
 
 app.get('/', function(request, response) {
-    //fs.readFileSync("index.html");
     var index_buffer = new Buffer(fs.readFileSync("index.html"))
     response.send(index_buffer.toString())
 });
 
-// ======== CIFAR10 ========
 app.get('/train', function(request, response){
-    var index_buffer = new Buffer(fs.readFileSync("public/cifar10/train.html"))
+    var index_buffer = new Buffer(fs.readFileSync("public/train.html"))
     response.send(index_buffer.toString())
 });
 
@@ -42,32 +40,53 @@ app.get('/admin', function(request, response){
     response.send(index_buffer.toString())
 });
 
+
+/////// =======  Client status API  =========
+
+app.get('/get_node_name', function(request, response) {
+  response.send((++node_count).toString())
+});
+
 //==========================================
 //=  Store and load models to / from server
 //==========================================
 
-app.get('/get_init_model_from_server', function(request, response){
-    var params = {init_model: cifar10.net_manager.get_init_model()};//, net : cifar10.net_manager.get_weights()};
-    response.send(params);
+app.get('/get_base_model_from_server', function(request, response) {
+    response.send(net_manager.get_base_model());
+    /*  Returns: {
+          base_model  = base_model;
+          id          = model_ID;
+          dataset     = dataset_ID
+        };
+    */
 });
 
-app.get('/get_net_and_update_batch_from_server', function(request, response){
-    var model_parameters = cifar10.net_manager.get_model_parameters();
-    var parameters = {net : cifar10.net_manager.get_weights(), batch_num: cifar10.net_manager.get_and_update_batch_num(),
-                        model_ID: cifar10.net_manager.get_model_ID(),learning_rate : model_parameters.learning_rate ,
-                        momentum : model_parameters.momentum , l2_decay: model_parameters .l2_decay};
-    //parameters = {net : cifar10.net_manager.get_weights()};
-    console.log(" <get_net_and_update_batch_from_server> Sending batch_num: " + parameters.batch_num + " to client: " + request.query.client_ID);
+app.get('/get_net_batch_all', function(request, response) {   //  New worker node
+    var model_parameters = net_manager.get_model_parameters();
+    var batch_num = net_manager.request_batch_num(request.query.client_ID);
+    var parameters = {
+                        net: net_manager.get_net().toJSON(),
+                        batch_num: batch_num,
+                        batch_size:  net_manager.get_batch_size(),
+                        model_ID: net_manager.get_model_ID(),
+                        trainer_param:  net_manager.get_trainer_param(),
+                        batch_url:  net_manager.get_batch_url(batch_num),
+                        model_name: net_manager.get_dataset_name()
+                     };
+    console.log(" <get_net_batch_all> Sending batch_num: " + parameters.batch_num + " to client: " + request.query.client_ID);
     response.send(parameters);
 });
 
 
 app.get('/get_net_and_batch_from_server', function(request, response){
     var model_parameters = cifar10.net_manager.get_model_parameters();
-    var parameters = {net : cifar10.net_manager.get_weights(), batch_num: cifar10.net_manager.get_batch_num(),
-                        model_ID: cifar10.net_manager.get_model_ID(),learning_rate : model_parameters.learning_rate,
-                        momentum : model_parameters.momentum , l2_decay: model_parameters .l2_decay};
-    //parameters = {net : cifar10.net_manager.get_weights()};
+    var parameters = {  net : cifar10.net_manager.get_weights(),
+                        batch_num: cifar10.net_manager.get_batch_num(),
+                        model_ID: cifar10.net_manager.get_model_ID(),
+                        learning_rate : model_parameters.learning_rate,
+                        momentum : model_parameters.momentum ,
+                        l2_decay: model_parameters.l2_decay
+                      };
     response.send(parameters);
     console.log(" <get_net_and_batch_from_server> sent net with model_ID: " + parameters.model_ID + " to Admin");
 });
@@ -75,23 +94,19 @@ app.get('/get_net_and_batch_from_server', function(request, response){
 
 app.get('/get_batch_num_from_server', function(request, response) {
     var batch_num = cifar10.net_manager.get_batch_num();
-    var parameters = { batch_num: batch_num};
+    var parameters = { batch_num: batch_num };
     response.send(parameters);
 });
 
-app.post('/update_model_from_gradients', function(request, response){
+app.post('/update_model_from_gradients', function(request, response) {
     var model_ID_from_client = request.body.model_ID;
-    if (model_ID_from_client == cifar10.net_manager.get_model_ID()) {
-        //Expecting to receive JSON of the form: {model_name: <model name>, net: <net in JSON>}
-        var model_name = request.body.model_name;
-        console.log("<store_weights_on_server()> updating model_name: " + model_name + " with model_ID: " +
-                        model_ID_from_client + " from client " + request.body.client_ID);
+
+    if (model_ID_from_client == net_manager.get_model_ID()) {
+
         console.log("<store_weights_on_server()> net (in JSON) size: " + request.body.net.length);
-        //console.log("<store_weights_on_server()> Received: " + request.body.net.substring(0, 1000));
 
-        cifar10.net_manager.update_model_from_gradients(request.body);
-
-        response.send("Stored " + model_name + " weights on Node.js server");
+        net_manager.update_model_from_gradients(request.body);
+        response.send();
     }
     else {
         response.send("<update_model_from_gradients> Old model_ID, gradients were discarded ");
@@ -119,7 +134,6 @@ app.post('/store_new_model_on_server', function(request, response){
 // ====== Default case ========
 
 app.get('*', function(request, response) {
-    //fs.readFileSync("index.html");
     var index_buffer = new Buffer(fs.readFileSync("index.html"))
     response.send(index_buffer.toString())
 });
