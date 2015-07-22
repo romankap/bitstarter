@@ -5,7 +5,6 @@ var curr_sample_num=0;
 var total_samples_predicted=0, total_predicted_correctly=0;
 var curr_net_accuracy=0, curr_validation_accuracy=0;
 
-
 // ------------------------
 // BEGIN CIFAR10 SPECIFIC STUFF
 // ------------------------
@@ -13,18 +12,18 @@ var classes_txt = ['airplane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'hor
 
 var use_validation_data = true;
 var first_execution = true;
-var check_net_accuracy_frequency = 15 * 1000;
+var check_net_accuracy_frequency = 20 * 1000;
 var total_training_batches; //TODO: change batch numbers and inputs accordingly
 var samples_in_test_batch, samples_in_validation_batch;
 var get_validation_model_interval, validation_batch_interval;
-var get_testing_model_interval, testing_batch_interval;
+var wait_for_testing_net_to_load_interval, testing_batch_interval;
 var get_net_accuracy = false, minimum_epochs_to_train;
-var is_validation_net_loaded_from_server = false, is_testing_net_loaded_from_server=false;
+var is_net_loaded_from_server = false;
 var is_admin_in_testing_mode = false;
 
 var initialize_model_parameters = function(data) {
     total_training_batches = data.total_training_batches;
-    samples_in_test_batch = data.samples_in_test_batch;
+    samples_in_test_batch = data.samples_in_testing_batch;
     samples_in_validation_batch = data.samples_in_validation_batch;
     minimum_epochs_to_train = data.minimum_epochs_to_train;
 }
@@ -54,8 +53,13 @@ $(window).load(function() {
 });
 
 var get_testing_model_from_server = function () {
-    is_testing_net_loaded_from_server = false;
+    is_net_loaded_from_server = false;
     get_net_and_current_training_batch_from_server();
+}
+
+
+var sample_test_instance = function(sample_num_to_test) {
+    return sample_image_instance(label_num_in_test_batch, sample_num_to_test);
 }
 
 
@@ -65,51 +69,60 @@ var test_batch = function() {
     if(total_samples_predicted < samples_in_test_batch)
         predict_samples_group(sample_test_instance);
     else{
+        $("#total-samples-tested").text("From " + samples_in_test_batch + "samples in the entire TEST-set");
+
+        clearInterval(testing_batch_interval);
+        clearInterval(wait_for_testing_net_to_load_interval);
+        is_net_loaded_from_server = false;
         toggle_validate();
-        $("#total-samples-tested").text("Based on the entire TEST-set samples");
     }
     //var vis_elt = document.getElementById("visnet");
     //visualize_activations(net, vis_elt);
     //update_net_param_display();
 }
 
-var wait_for_net_and_testing_batch_to_load = function() {
-    if (is_batch_loaded && is_testing_net_loaded_from_server) {
-        console.log('Starting TESTING');
-        clear_interval(get_testing_model_interval);
+var wait_for_testing_net_to_load = function() {
+    if (is_net_loaded_from_server) {
+        console.log('Starting TO TEST');
+        clearInterval(wait_for_testing_net_to_load_interval);
         testing_batch_interval = setInterval(test_batch, 0);
     }
     else {
-        get_testing_model_interval = setTimeout(wait_for_net_and_testing_batch_to_load, 200);
+        wait_for_testing_net_to_load_interval = setTimeout(wait_for_testing_net_to_load, 200);
     }
 }
 
 var get_testing_accuracy = function(){
-    is_batch_loaded = false;
-    load_data_batch("testing");
+    clearInterval(get_validation_model_interval);
+    clearInterval(validation_batch_interval);
+
     get_testing_model_from_server();
-    wait_for_net_and_testing_batch_to_load();
+    wait_for_testing_net_to_load();
 }
 
 var get_validation_model_from_server = function () {
-    if(get_net_accuracy)
+    if(get_net_accuracy) {
         get_net_and_current_training_batch_from_server();
+        validation_batch_interval = setInterval(validate_batch, 0);
+    }
     else
         clearInterval(get_validation_model_interval);
 }
 
 var validate_batch = function() {
-    if (!get_net_accuracy || !is_validation_net_loaded_from_server) return;
+    if (!get_net_accuracy || !is_net_loaded_from_server) return;
 
     if(total_samples_predicted < samples_in_validation_batch){
         predict_samples_group(sample_validation_instance);
     }
     else{
-        $("#total-samples-tested").text("Based on the entire validation-set samples. Plotted weight activations");
+        $("#total-samples-tested").text("From " + samples_in_validation_batch + " validation-set samples. Plotted weight activations");
         var vis_elt = document.getElementById("visnet");
         visualize_activations(net, vis_elt);
 
-        is_validation_net_loaded_from_server = false;
+        is_net_loaded_from_server = false;
+        store_validation_accuracy_on_server();
+        clearInterval(validation_batch_interval);
         get_validation_model_interval = setInterval(get_validation_model_from_server, check_net_accuracy_frequency);
     }
     //var vis_elt = document.getElementById("visnet");
@@ -191,11 +204,6 @@ var sample_image_instance = function(get_label_num ,sample_num_to_predict) {
 
     var label_index = get_label_num(sample_num_to_predict);
     return {x:x, label:labels[label_index]};
-}
-
-
-var sample_testing_instance = function(sample_num_to_test) {
-    return sample_image_instance(label_num_in_test_batch, sample_num_to_test);
 }
 
 var sample_validation_instance = function(sample_num_to_test) {
@@ -286,10 +294,10 @@ var get_net_and_current_training_batch_from_server = function() {
         console.log("<get_net_and_current_training_batch_from_server> Received "+ parameters.model_name + " model with model_ID: " +
                     data.model_ID + " and epoch_num " + data.epoch_num);
 
-        if (data.model_ID !== curr_model_ID || data.epoch_num !== curr_epoch_num){ //Load a new net for testing
-            load_net_from_server_data(data);
+        if (data.model_ID !== curr_model_ID || data.epoch_num !== curr_epoch_num || is_admin_in_testing_mode){
+            load_net_from_server_data(data); //Load a new net for validation / testing
 
-            is_validation_net_loaded_from_server = true;
+            is_net_loaded_from_server = true;
             console.log("<get_net_and_current_training_batch_from_server> model_ID & epoch_num were updated ==> LOADING new net");
         }
         else
@@ -311,17 +319,18 @@ var get_validation_model = function() {
     $.get('/get_validation_net', parameters, function(data) {
         load_net_from_server_data(data);
 
-        is_validation_net_loaded_from_server = true;
+        is_net_loaded_from_server = true;
     });
 }
 
 var store_validation_accuracy_on_server = function() {
     var parameters = {model_ID: curr_model_ID, epoch_num: curr_epoch_num,
-                    test_accuracy: curr_net_accuracy};
+                    validation_accuracy: curr_net_accuracy};
     $.post('/store_validation_accuracy_on_server', parameters, function(data) {
+        console.log("<store_validation_accuracy_on_server> Received data.is_testing_needed: " + data.is_testing_needed);
         if(data.is_testing_needed) {
             console.log("<store_validation_accuracy_on_server> Worse accuracy after " + curr_epoch_num +
-                        " epochs, starting validation");
+                        " epochs, GOING TO TESTING MODE");
             is_admin_in_testing_mode = true;
             get_testing_accuracy(); //TODO: remove comment from this line and implement function
         }
@@ -349,8 +358,7 @@ var reset_model = function() {
         console.log("Resetting the model named: <" + parameters.model_name + "> stored on server");
     });
 
-    is_validation_net_loaded_from_server = false;
-    is_testing_net_loaded_from_server = false;
+    is_net_loaded_from_server = false;
 }
 
 var change_net = function() {

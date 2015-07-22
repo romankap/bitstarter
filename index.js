@@ -9,6 +9,8 @@ var config = require('./config');
 //var db = require('./app/db');
 var cifar10 = require('./app/models/cifar10');
 
+var is_model_in_testing_mode = false;
+
 var app = express();
 app.use(bodyParser.json({limit: '10mb'})); // support json encoded bodies
 app.use(bodyParser.urlencoded({ extended: true, limit: '10mb' })); // support encoded bodies
@@ -124,7 +126,7 @@ app.get('/get_batch_num_from_server', function(request, response) {
 
 app.post('/update_model_from_gradients', function(request, response){
     var model_ID_from_client = request.body.model_ID;
-    if (model_ID_from_client == cifar10.net_manager.get_model_ID()) {
+    if (model_ID_from_client == cifar10.net_manager.get_model_ID() && !is_model_in_testing_mode) {
         //Expecting to receive JSON of the form: {model_name: <model name>, net: <net in JSON>}
         var model_name = request.body.model_name;
         console.log("<store_weights_on_server()> updating model_name: " + model_name + " with model_ID: " +
@@ -137,8 +139,14 @@ app.post('/update_model_from_gradients', function(request, response){
         cifar10.net_manager.update_stats(request.body);
     }
     else {
-        response.send("<update_model_from_gradients> Old model_ID, gradients were discarded ");
-        console.log("<update_model_from_gradients> Received results from an old model_ID " + model_ID_from_client + ", discarding...");
+        if (is_model_in_testing_mode) {
+            response.send("<update_model_from_gradients> Server in testing mode, stopped updating the model ");
+            console.log("<update_model_from_gradients> Server in testing mode, stopped updating the model ");
+        }
+        else {
+            response.send("<update_model_from_gradients> Old model_ID, gradients were discarded ");
+            console.log("<update_model_from_gradients> Received results from an old model_ID " + model_ID_from_client + ", discarding...");
+        }
     }
 });
 
@@ -148,6 +156,7 @@ app.post('/reset_model', function(request, response){
     response.send("Model was " + request.body.model_name + " resetted. New model_ID: " + new_model_ID);
     console.log("<reset_model> Resetting the net to:\n" + cifar10.net_manager.get_init_model());
     console.log("<reset_model> Model was " + request.body.model_name + " resetted. New model_ID: " + new_model_ID);
+    is_model_in_testing_mode = false;
 });
 
 app.post('/store_new_model_on_server', function(request, response){
@@ -159,21 +168,20 @@ app.post('/store_new_model_on_server', function(request, response){
     console.log("<store_new_model_on_server> Model " + request.body.model_name + " was changed and saved. New model_ID: " + new_model_ID);
 });
 
-var stop_training_and_store_net = function() {
-
-}
-
 app.post('/store_validation_accuracy_on_server', function(request, response){
-    if (cifar10.net_manager.is_new_validation_accuracy_better(request.body.test_accuracy, request.body.epoch_num)
-            && request.body.epoch_num < cifar10.minimum_epochs_to_train)
-    {
-        var res = {is_testing_needed: false};
-        response.send(res);
-    }
-    else {
+    if (cifar10.net_manager.is_new_validation_accuracy_worse(request.body.validation_accuracy, request.body.epoch_num)
+            && request.body.epoch_num > cifar10.minimum_epochs_to_train) {
         var res = {is_testing_needed: true};
         response.send(res);
-        stop_training_and_store_net();
+        is_model_in_testing_mode = true;
+        console.log("<store_validation_accuracy_on_server> Received new validation accuracy: "
+            + request.body.validation_accuracy + "==> +++ Going to TESTING mode");
+    }
+    else {
+        var res = {is_testing_needed: false};
+        response.send(res);
+        console.log("<store_validation_accuracy_on_server> Received new validation accuracy: "
+            + request.body.validation_accuracy + "==> Staying in validation mode");
     }
 });
 

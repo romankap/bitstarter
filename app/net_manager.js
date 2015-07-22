@@ -229,14 +229,14 @@ module.exports = function (model_training_batches) {
             add_bw_timing(stats.bw_timings_average);
             add_latencies_to_server(stats.latency_to_server);
         },
-        is_new_validation_accuracy_better : function(new_testing_accuracy, validation_epoch_num){
+        is_new_validation_accuracy_worse : function(new_testing_accuracy, validation_epoch_num){
             validation_accuracies_array[validation_epoch_num] = new_testing_accuracy;
 
-            if (new_testing_accuracy > curr_testing_accuracy) {
-                curr_testing_accuracy = new_testing_accuracy;
-                return true;
+            if (last_validation_accuracy <= new_testing_accuracy) {
+                last_validation_accuracy = new_testing_accuracy;
+                return false;
             }
-            return false;
+            return true;
         },
 
         get_stats_in_csv : function() {
