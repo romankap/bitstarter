@@ -13,7 +13,7 @@ var classes_txt = ['airplane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'hor
 
 var use_validation_data = true;
 var first_execution = true;
-var check_net_accuracy_frequency = 10 * 1000;
+var check_net_accuracy_frequency = 15 * 1000;
 var total_training_batches; //TODO: change batch numbers and inputs accordingly
 var samples_in_test_batch, samples_in_validation_batch;
 var get_validation_model_interval, validation_batch_interval;

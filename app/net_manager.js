@@ -194,6 +194,7 @@ module.exports = function (model_training_batches) {
             latencies_to_server.length=0; latencies_to_server_sum=0;
             latencies_from_server.length=0; latencies_from_server_sum=0;
             time_to_train_epochs_array.length=0; epoch_start_time=0; epoch_end_time=0;
+            validation_accuracies_array.length=0;
 
             last_validation_accuracy=0; testing_accuracy=0;
         },

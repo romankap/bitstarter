@@ -1,6 +1,5 @@
 var layer_defs, net, trainer;
 var old_net, curr_net, gradients_net;
-var samples_in_training_batch = 1000; //random init
 var curr_model_ID = 0, curr_sample_num=-1;
 var is_net_loaded_from_server = false, is_training_active = false;
 var train_on_batch_interval;
@@ -74,7 +73,7 @@ $(window).load(function() {
     console.log("Hello, I am trainer-client " + client_ID);
     var AJAX_init_parameters = {model_name: "CIFAR10" };
     $.get('/get_init_model_from_server', AJAX_init_parameters, function(data) {
-        console.log("Received init_parameters from server: \n" + data.init_model);
+        console.log("Received init_parameters from server");
         initialize_model_parameters(data);
     });
 });

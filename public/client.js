@@ -1,9 +1,8 @@
 var net, trainer;
 var client_ID, curr_batch_num=-1, curr_epoch_num;
-var num_batches = 51; // 50 training batches, 1 test
-var test_batch = 50;
 var data_img_elt; //TODO: make this a single element instead of an array
 var img_data// = new Array(num_batches);
+var samples_in_training_batch = 1000; //random init
 
 var lossGraph = new cnnvis.Graph();
 var xLossWindow = new cnnutil.Window(100);
@@ -12,7 +11,7 @@ var trainAccWindow = new cnnutil.Window(100);
 var valAccWindow = new cnnutil.Window(100);
 var testAccWindow = new cnnutil.Window(50, 1);
 
-var is_batch_loaded;// = new Array(num_batches);
+var is_batch_loaded;
 //var loaded_train_batch = [];
 var init_model;
 // ------------------------
@@ -76,9 +75,11 @@ var load_data_batch = function(batch_to_load) {
         console.log('finished loading data batch ' + batch_to_load);
     }
     if (isNumeric(batch_to_load))
-        data_img_elt.src = "https://s3.eu-central-1.amazonaws.com/bitstarter-dl/cifar10/cifar10_batch_" + batch_to_load + ".png";
+        data_img_elt.src = "https://s3.eu-central-1.amazonaws.com/bitstarter-dl/cifar10/" +  + samples_in_training_batch
+                            + "/cifar10_batch_" + batch_to_load + ".png";
     else //Either validation or testing batch
-        data_img_elt.src = "https://s3.eu-central-1.amazonaws.com/bitstarter-dl/cifar10/cifar10_" + batch_to_load + "_batch.png";
+        data_img_elt.src = "https://s3.eu-central-1.amazonaws.com/bitstarter-dl/cifar10/" + samples_in_training_batch
+                            + "/cifar10_admin.png";
 }
 
 // ------------------------
