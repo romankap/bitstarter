@@ -70,7 +70,7 @@ app.get('/get_net_and_update_batch_from_server', function(request, response){
 });
 
 // To be used by the Admin
-app.get('/get_net_and_batch_from_server', function(request, response){
+app.get('/get_net_and_current_training_batch_from_server', function(request, response){
     if (cifar10.net_manager.is_need_to_send_net_for_testing(request.query.model_ID, request.query.epoch_num)) {
         var model_parameters = cifar10.net_manager.get_model_parameters();
         var parameters = {net : cifar10.net_manager.get_weights(), batch_num: cifar10.net_manager.get_batch_num(),
@@ -80,7 +80,7 @@ app.get('/get_net_and_batch_from_server', function(request, response){
                         total_different_clients: cifar10.net_manager.get_different_clients_num(),
                         last_contributing_client: cifar10.net_manager.get_last_contributing_client()};
 
-        console.log(" <get_net_and_batch_from_server> sending net with model_ID " + parameters.model_ID +
+        console.log(" <get_net_and_current_training_batch_from_server> sending net with model_ID " + parameters.model_ID +
                         " and in epoch_num " + parameters.epoch_num + " to Admin");
     }
     else {
@@ -90,7 +90,7 @@ app.get('/get_net_and_batch_from_server', function(request, response){
                         total_different_clients: cifar10.net_manager.get_different_clients_num(),
                         last_contributing_client: cifar10.net_manager.get_last_contributing_client()};
 
-        console.log(" <get_net_and_batch_from_server> NOT sending net to Admin. Model_ID " + parameters.model_ID +
+        console.log(" <get_net_and_current_training_batch_from_server> NOT sending net to Admin. Model_ID " + parameters.model_ID +
                         " & epoch_num " + parameters.epoch_num + " didn't update");
     }
     response.send(parameters);

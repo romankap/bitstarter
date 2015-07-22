@@ -4,10 +4,14 @@
 var convnetjs = require('convnetjs');
 var net_manager = require('../net_manager');
 
-var total_batches = 50;
-var cifar10_manager = net_manager(total_batches);
+var total_training_batches = 50;
 var minimum_epochs_to_train=50;
+var samples_in_training_batch=1000;
+var samples_in_testing_batch=1000;
+var samples_in_validation_batch=1000;
 
+
+var cifar10_manager = net_manager(total_training_batches);
 
 var cifar10_init_model = "layer_defs = [];\n\
 layer_defs.push({type:'input', out_sx:32, out_sy:32, out_depth:3});\n\

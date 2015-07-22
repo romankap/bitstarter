@@ -71,7 +71,10 @@ var load_data_batch = function(batch_to_load) {
         is_batch_loaded = true;
         console.log('finished loading data batch ' + batch_to_load);
     }
-    data_img_elt.src = "https://s3.eu-central-1.amazonaws.com/bitstarter-dl/cifar10/cifar10_batch_" + batch_to_load + ".png";
+    if (isNumeric(batch_to_load))
+        data_img_elt.src = "https://s3.eu-central-1.amazonaws.com/bitstarter-dl/cifar10/cifar10_batch_" + batch_to_load + ".png";
+    else //Either validation or testing batch
+        data_img_elt.src = "https://s3.eu-central-1.amazonaws.com/bitstarter-dl/cifar10/cifar10_" + batch_to_load + "_batch_.png";
 }
 
 // ------------------------
