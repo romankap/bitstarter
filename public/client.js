@@ -56,10 +56,12 @@ var update_displayed_batch_and_epoch_nums = function(new_batch_num, new_epoch_nu
         $('#batch-num').html("Waiting for batch and epoch to update");
     else {
         $('#batch-num').html("Training on batch #" + new_batch_num + " , epoch #" + new_epoch_num);
-        if (num_of_different_clients !== undefined && num_of_different_clients >= 2)
-        {
+        if (num_of_different_clients !== undefined && num_of_different_clients >= 2) {
             $('#clients-connected').html('You are currently part of a net of size ' +
                 '<span class=\"color-blue\">' + num_of_different_clients + "</span>, thank you!");
+        }
+        else if (num_of_different_clients !== undefined && num_of_different_clients === 1) {
+            $('#clients-connected').html('You are the first trainer, way to go!');
         }
     }
 }
