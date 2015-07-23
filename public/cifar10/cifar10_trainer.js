@@ -32,7 +32,7 @@ var gradients_calculator = {
 var reset_stats = function() {
     fw_timings_sum = fw_timings_num = 0;
     bw_timings_sum = bw_timings_num = 0;
-    post_to_server_start = post_to_server_end = -1;
+    //post_to_server_start = post_to_server_end = -1;
     get_from_server_start = get_from_server_end = -1;
 }
 
