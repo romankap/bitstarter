@@ -57,8 +57,8 @@ var update_displayed_batch_and_epoch_nums = function(new_batch_num, new_epoch_nu
     else {
         $('#batch-num').html("Training on batch #" + new_batch_num + " , epoch #" + new_epoch_num);
         if (num_of_different_clients !== undefined && num_of_different_clients >= 2) {
-            $('#clients-connected').html('You are currently part of a net of size ' +
-                '<span class=\"color-blue\">' + num_of_different_clients + "</span>, thank you!");
+            $('#clients-connected').html('You are currently part of a net with ' +
+                '<span class=\"color-blue\">' + num_of_different_clients + "</span> participants, thank you!");
         }
         else if (num_of_different_clients !== undefined ) {
             $('#clients-connected').html('You are the first trainer, way to go!');
@@ -83,10 +83,10 @@ var load_data_batch = function(batch_to_load) {
         console.log('finished loading data batch ' + batch_to_load);
     }
     if (isNumeric(batch_to_load))
-        data_img_elt.src = "https://s3.eu-central-1.amazonaws.com/bitstarter-dl/cifar10/" +  samples_in_training_batch
+        data_img_elt.src = "http://tx.technion.ac.il/~sromanka/cifar10/" +  samples_in_training_batch
                             + "/cifar10_batch_" + batch_to_load + ".png";
     else //Either validation or testing batch
-        data_img_elt.src = "https://s3.eu-central-1.amazonaws.com/bitstarter-dl/cifar10/" + samples_in_training_batch
+        data_img_elt.src = "http://tx.technion.ac.il/~sromanka/cifar10/" + samples_in_training_batch
                             + "/cifar10_admin.png";
 }
 
