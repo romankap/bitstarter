@@ -57,9 +57,6 @@ var get_bw_timings_average = function () {
 // ------------------------
 // BEGIN CIFAR10 SPECIFIC STUFF
 // ------------------------
-var classes_txt = ['airplane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck'];
-var use_validation_data = true;
-
 
 var initialize_model_parameters = function(data) {
     total_training_batches = data.total_training_batches;
