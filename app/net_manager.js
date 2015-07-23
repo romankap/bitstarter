@@ -23,6 +23,7 @@ module.exports = function (model_training_batches) {
     var model_ID = 0, init_model, last_model_ID_sent;
     var epochs_count = 0, last_epoch_sent;
     var clients_dict = {}, total_different_clients=0, last_contributing_client = "<no client>";
+    var training_method = 'adadelta';
 
     var fw_timings = new Array(), fw_timings_sum=0;
     var bw_timings = new Array(), bw_timings_sum=0;
@@ -163,9 +164,20 @@ module.exports = function (model_training_batches) {
         },
         store_init_model: function(new_init_model) {
             init_model = new_init_model;
+
+            if (init_model.indexOf("adagrad") !== -1)
+                training_method = "adagrad";
+            else if (init_model.indexOf("sgd") !== -1)
+                training_method = "sgd";
+            else
+                training_method = "adadelta";
+
         },
         get_init_model: function() {
             return init_model;
+        },
+        get_training_method: function() {
+            return training_method;
         },
         get_different_clients_num : function() {
             return total_different_clients;

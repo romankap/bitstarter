@@ -3,6 +3,7 @@ var old_net, curr_net, gradients_net;
 var curr_model_ID = 0, curr_sample_num=-1;
 var is_net_loaded_from_server = false, is_training_active = false;
 var train_on_batch_interval;
+var training_method = 'adadelta'; //Default value
 
 var fw_timings_sum, fw_timings_num;
 var bw_timings_sum, bw_timings_num;
@@ -261,7 +262,8 @@ var get_net_and_update_batch_from_server = function() {
         old_net = curr_net;
         net = new convnetjs.Net();
         net.fromJSON(curr_net);
-        trainer = new convnetjs.SGDTrainer(net, {method:'adadelta', batch_size:4, l2_decay:0.0001});
+        training_method = data.training_method;
+        trainer = new convnetjs.SGDTrainer(net, {method: training_method, batch_size:4, l2_decay:0.0001});
 
         trainer.learning_rate = data.learning_rate;
         trainer.momentum = data.momentum;
@@ -276,9 +278,11 @@ var get_net_and_update_batch_from_server = function() {
         latency_from_server = get_from_server_end - get_from_server_start;
 
         reset_stats();
-        console.log("<get_net_and_update_batch_from_server> Received " + parameters.model_name + " net back. model_ID: " + data.model_ID);
-        console.log("<get_net_and_update_batch_from_server> Working on batch: " + data.batch_num); //DEBUG
-        console.log("<get_net_and_update_batch_from_server> Received " + data.net.length + " net in length back"); //DEBUG
+        console.log("<get_net_and_update_batch_from_server> Received " + parameters.model_name +
+                    " net back. model_ID: " + data.model_ID);
+        console.log("<get_net_and_update_batch_from_server> Working on batch: " + data.batch_num
+                    + ", training method: " + training_method);
+        console.log("<get_net_and_update_batch_from_server> Received " + data.net.length + " net in length back");
     });
     start_working();
 }
