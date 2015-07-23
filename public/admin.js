@@ -31,6 +31,7 @@ var initialize_model_parameters = function(data) {
 // int main
 $(window).load(function() {
     console.log("Hello Admin, your wish is net's command");
+	is_batch_loaded = false;
     load_data_batch("validation");
     var AJAX_init_parameters = {model_name: "CIFAR10" };
     $.get('/get_init_model_from_server', AJAX_init_parameters, function(data) {
@@ -44,8 +45,7 @@ $(window).load(function() {
         reset_all();
         update_net_param_display();
 
-        is_batch_loaded = false;
-
+        
         //load_data_batch(0); // async load train set batch 0 (6 total train batches)
         //load_data_batch(validate_batch); // async load test set (batch 6)
         //start_fun();
@@ -101,7 +101,7 @@ var get_testing_accuracy = function(){
 }
 
 var get_validation_model_from_server = function () {
-    if(get_net_accuracy) {
+    if(get_net_accuracy ) {
         get_net_and_current_training_batch_from_server();
         validation_batch_interval = setInterval(validate_batch, 0);
     }
@@ -110,7 +110,7 @@ var get_validation_model_from_server = function () {
 }
 
 var validate_batch = function() {
-    if (!get_net_accuracy || !is_net_loaded_from_server) return;
+    if (!get_net_accuracy || !is_net_loaded_from_server || !is_batch_loaded) return;
 
     if(total_samples_predicted < samples_in_validation_batch){
         predict_samples_group(sample_validation_instance);
