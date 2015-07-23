@@ -166,11 +166,11 @@ var step = function(sample, sample_num) {
     add_to_fw_and_bw_timing_stats(stats.fwd_time, stats.bwd_time);
 
     // keep track of stats such as the average training error and loss
-    var yhat = net.getPrediction();
-    var train_acc = yhat === y ? 1.0 : 0.0;
+    //var yhat = net.getPrediction();
+    //var train_acc = yhat === y ? 1.0 : 0.0;
     xLossWindow.add(lossx);
     wLossWindow.add(lossw);
-    trainAccWindow.add(train_acc);
+    //trainAccWindow.add(train_acc);
 
     // visualize training status
     if (sample_num % 10 === 0) {
