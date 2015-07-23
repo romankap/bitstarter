@@ -19,6 +19,35 @@ var curr_sample_num;
 var is_net_loaded_from_server = false, is_training_active = false;
 var train_on_batch_interval;    // Interval identifier
 
+
+var fw_timings_sum, fw_timings_num;
+var bw_timings_sum, bw_timings_num;
+var latency_to_server, post_to_server_start, post_to_server_end;
+var latency_from_server, get_from_server_start, get_from_server_end;
+
+var make_string_ID = function ()
+{
+    var text = "";
+    var consonants = "AEIO";
+    var vowels = "BDFGJKLMNPRSTVYZ";
+
+    for( var i=0; i < 5; i++ ) {
+        if (i % 2 == 0)
+            text += vowels.charAt(Math.floor(Math.random() * vowels.length));
+        else
+            text += consonants.charAt(Math.floor(Math.random() * consonants.length));
+    }
+
+    return text;
+}
+
+var change_client_name = function() {
+    $('#client-name').html('Hello trainer-client <span class=\"color-blue\">' + client_ID + "</span>");
+    $('#client-name-explanation').html("(" + client_ID + " is your identifying name in the crowdcomputing network)");
+}
+
+
+
 var gradients_calculator = {
     traverse: function (new_net_property, old_net_property, prev_property) {
         debug_global_counter = 0;
@@ -38,6 +67,33 @@ var gradients_calculator = {
     }
 }
 
+var reset_stats = function() {
+    fw_timings_sum = fw_timings_num = 0;
+    bw_timings_sum = bw_timings_num = 0;
+    //post_to_server_start = post_to_server_end = -1;
+    get_from_server_start = get_from_server_end = -1;
+}
+
+var add_to_fw_and_bw_timing_stats = function(fw_time, bw_time) {
+    fw_timings_sum += fw_time;
+    fw_timings_num++;
+
+    bw_timings_sum += bw_time;
+    bw_timings_num++;
+}
+
+var get_fw_timings_average = function () {
+    if (fw_timings_num > 0)
+        return fw_timings_sum / fw_timings_num;
+    return null;
+}
+
+var get_bw_timings_average = function () {
+    if (bw_timings_num > 0)
+        return bw_timings_sum / bw_timings_num;
+    return null;
+}
+
 function isNumeric(num) {
     return !isNaN(num)
 }
@@ -47,13 +103,21 @@ var get_random_number = function (max_num) {
     return Math.floor((Math.random() * max_num));
 }
 
-var update_client_name = function() {
-    $('#client-name').html("Hello trainer-node #" + client_name);
+var update_displayed_batch_and_epoch_nums = function(new_batch_num, new_epoch_num, num_of_different_clients) {
+    if (new_batch_num === -1)
+        $('#batch-num').html("Waiting for batch and epoch to update");
+    else {
+        $('#batch-num').html("Training on batch #" + new_batch_num + " , epoch #" + new_epoch_num);
+        if (num_of_different_clients !== undefined && num_of_different_clients >= 2) {
+            $('#clients-connected').html('You are currently part of a net with ' +
+                '<span class=\"color-blue\">' + num_of_different_clients + "</span> participants, thank you!");
+        }
+        else if (num_of_different_clients !== undefined ) {
+            $('#clients-connected').html('You are the first trainer, way to go!');
+        }
+    }
 }
 
-var update_displayed_batch_num = function(new_batch_num) {
-    $('#batch-num').html("Training on batch #" + new_batch_num);
-}
 
 var load_data_batch = function(batch_url) {
     // Load the dataset with JS in background
@@ -367,26 +431,35 @@ var start_client = function() {
 
 
 var init_all = function() {
-    var parameters = {  client_ID: client_name };
+    var parameters = {  client_ID: client_ID };
 
     $.get('/get_net_batch_all', parameters, function(data) {
+		curr_batch_num = data.batch_num;
+        curr_epoch_num = data.epoch_num;
+		
         curr_batch_num = data.batch_num;
         batch_size = data.batch_size;
 
         load_data_batch(data.batch_url);
-        update_displayed_batch_num(curr_batch_num);
-
+		update_displayed_batch_and_epoch_nums(curr_batch_num, curr_epoch_num, data.total_different_clients);
+		
         if(net != undefined) {
           old_net = net;
         }
         net = new convnetjs.Net();
         net.fromJSON(data.net);
         if(model_id != data.model_ID) {
-          $.getScript(data.model_name + '/labels.js');
+          $.getScript(data.dataset_name + '/labels.js');
         }
         model_id  = data.model_ID;
 
         is_net_loaded_from_server = true;
+		
+		
+        get_from_server_end = new Date().getTime();
+        latency_from_server = get_from_server_end - get_from_server_start;
+		reset_stats();
+		
         trainer = new convnetjs.SGDTrainer(net, data.trainer_param);
 
 
@@ -398,7 +471,8 @@ var init_all = function() {
 
 var post_gradients_to_server = function() {
   is_training_active = false;
-
+  post_to_server_start = new Date().getTime();
+	
   var gradients = net;
   if(old_net != undefined) {
     gradients_calculator.traverse(gradients, old_net, "");
@@ -408,13 +482,19 @@ var post_gradients_to_server = function() {
   var parameters = {
                       net: JSON.stringify(gradients),
                       model_ID: model_id,
-                      client_ID: client_name,
+                      client_ID: client_ID,
+					  fw_timings_average: get_fw_timings_average().toFixed(2),
+					  bw_timings_average: get_bw_timings_average().toFixed(2),
+					  latency_to_server: latency_to_server
                   };
 
   console.log("Sending net_in_JSON with length " + parameters.net.length);
 
   $.post('/update_model_from_gradients', parameters, function(data) {
-      console.log(data);
+		console.log(data);
+		post_to_server_end = new Date().getTime();
+		latency_to_server = post_to_server_end - post_to_server_start;
+		console.log("<post_gradients_to_server> Sending latency_to_server: " + latency_to_server);
   });
 }
 
@@ -480,6 +560,7 @@ var step = function(sample, sample_num) {
     var stats = trainer.train(x, y);
     var lossx = stats.cost_loss;
     var lossw = stats.l2_decay_loss;
+	add_to_fw_and_bw_timing_stats(stats.fwd_time, stats.bwd_time);
 
     // keep track of stats such as the average training error and loss
     var yhat = net.getPrediction();
@@ -547,9 +628,7 @@ var compute = function() {
 }
 // int main
 $(window).load(function() {
-    $.get('/get_node_name', function(data) {
-        client_name = data;
-        update_client_name();
-        document.getElementById('compute-btn').disabled = false;
-    });
+	client_ID = make_string_ID();
+	change_client_name();
+	document.getElementById('compute-btn').disabled = false;
 });

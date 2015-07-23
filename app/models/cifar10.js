@@ -4,8 +4,13 @@
 
 module.exports = {
   name: "cifar10",
-  total_batches: 500,
-  batch_size: 100,
+  
+  train_size: 500,
+  train_batches: 45000 / 500,
+  validation_size: 5000,
+  test_size: 10000,
+  
+  minimum_epochs_to_train: 50,
 
   init_def: "layer_defs = [];\n\
   layer_defs.push({type:'input', out_sx:32, out_sy:32, out_depth:3});\n\
@@ -23,6 +28,6 @@ module.exports = {
   trainer = new convnetjs.SGDTrainer(net, {method:'adadelta', batch_size:3, l2_decay:0.0001});\n",
 
   gen_batch_url: function(batch) {
-    return "https://s3.eu-central-1.amazonaws.com/bitstarter-dl/cifar10/100/cifar10_batch_" + batch + ".png";;
+    return "http://tx.technion.ac.il/~sromanka/cifar10/500/cifar10_batch_" + batch + ".png";;
   }
 };
