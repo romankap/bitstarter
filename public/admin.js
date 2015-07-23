@@ -3,17 +3,14 @@ var curr_model_ID=-1, curr_epoch_num=0;
 var curr_sample_num=0;
 
 var total_samples_predicted=0, total_predicted_correctly=0;
-var curr_net_accuracy=0, curr_validation_accuracy=0;
+var curr_net_accuracy=0;
 
 // ------------------------
 // BEGIN CIFAR10 SPECIFIC STUFF
 // ------------------------
-var classes_txt = ['airplane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck'];
 
-var use_validation_data = true;
-var first_execution = true;
-var check_net_accuracy_frequency = 20 * 1000;
-var total_training_batches; //TODO: change batch numbers and inputs accordingly
+var check_net_accuracy_frequency = 60 * 1000;
+var total_training_batches;
 var samples_in_test_batch, samples_in_validation_batch;
 var get_validation_model_interval, validation_batch_interval;
 var wait_for_testing_net_to_load_interval, testing_batch_interval;
@@ -215,7 +212,6 @@ var get_validation_score = function() {
 
 }
 
-
 // Goes over the entire testing batch and updates curr_net_accuracy
 var predict_samples_group = function(sample_instance_function) {
     var num_classes = net.layers[net.layers.length-1].out_depth;
@@ -224,21 +220,11 @@ var predict_samples_group = function(sample_instance_function) {
         var sample = sample_instance_function(curr_sample_num);
         var sample_label = sample.label;  // ground truth label
 
-        // forward prop it through the network
-        var aavg = new convnetjs.Vol(1,1,num_classes,0.0);
-        // ensures we always have a list, regardless if above returns single item or list
-        var xs = [].concat(sample.x);
-        var n = xs.length;
-        for(var i=0;i<n;i++) {
-            var a = net.forward(xs[i]);
-            aavg.addFrom(a);
+        net.forward(sample.x);
+        var yhat = net.getPrediction();
+        if( yhat === sample_label) {
+            total_predicted_correctly++;
         }
-        var preds = [];
-        for(var k=0;k<aavg.w.length;k++) { preds.push({k:k,p:aavg.w[k]}); }
-        preds.sort(function(a,b){return a.p<b.p ? 1:-1;});
-
-        var correct = preds[0].k===sample_label;
-        if(correct) total_predicted_correctly++;
         total_samples_predicted++;
 
         curr_sample_num++;

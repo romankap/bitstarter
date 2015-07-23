@@ -70,7 +70,8 @@ app.get('/get_net_and_update_batch_from_server', function(request, response){
     var batch_to_send = cifar10.net_manager.get_and_update_batch_num();
     var parameters = {net : cifar10.net_manager.get_weights(), batch_num: batch_to_send, epoch_num: epoch_to_send,
                         model_ID: cifar10.net_manager.get_model_ID(),learning_rate : model_parameters.learning_rate,
-                        momentum : model_parameters.momentum , l2_decay: model_parameters .l2_decay};
+                        momentum : model_parameters.momentum , l2_decay: model_parameters .l2_decay,
+                        total_different_clients: cifar10.net_manager.get_different_clients_num()};
     //parameters = {net : cifar10.net_manager.get_weights()};
     console.log(" <get_net_and_update_batch_from_server> Sending batch_num: " + parameters.batch_num + " to client: " + request.query.client_ID);
     response.send(parameters);

@@ -168,11 +168,11 @@ var step = function(sample, sample_num) {
     add_to_fw_and_bw_timing_stats(stats.fwd_time, stats.bwd_time);
 
     // keep track of stats such as the average training error and loss
-    //var yhat = net.getPrediction();
-    //var train_acc = yhat === y ? 1.0 : 0.0;
+    var yhat = net.getPrediction();
+    var train_acc = yhat === y ? 1.0 : 0.0;
     xLossWindow.add(lossx);
     wLossWindow.add(lossw);
-    //trainAccWindow.add(train_acc);
+    trainAccWindow.add(train_acc);
 
     // visualize training status
     if (sample_num % 10 === 0) {
@@ -257,7 +257,7 @@ var get_net_and_update_batch_from_server = function() {
         curr_epoch_num = data.epoch_num;
         load_data_batch(curr_batch_num);
 
-        update_displayed_batch_and_epoch_nums(curr_batch_num, curr_epoch_num);
+        update_displayed_batch_and_epoch_nums(curr_batch_num, curr_epoch_num, data.total_different_clients);
 
         //old_net.fromJSON(net.toJSON());
         curr_net = JSON.parse(data.net);

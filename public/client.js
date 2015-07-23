@@ -51,11 +51,17 @@ var change_client_name = function() {
     $('#client-name-explanation').html("(" + client_ID + " is your identifying name in the crowdcomputing network)");
 }
 
-var update_displayed_batch_and_epoch_nums = function(new_batch_num, new_epoch_num) {
+var update_displayed_batch_and_epoch_nums = function(new_batch_num, new_epoch_num, num_of_different_clients) {
     if (new_batch_num === -1)
         $('#batch-num').html("Waiting for batch and epoch to update");
-    else
+    else {
         $('#batch-num').html("Training on batch #" + new_batch_num + " , epoch #" + new_epoch_num);
+        if (num_of_different_clients !== undefined && num_of_different_clients >= 2)
+        {
+            $('#clients-connected').html('You are currently part of a net of size ' +
+                '<span class=\"color-blue\">' + num_of_different_clients + "</span>, thank you!");
+        }
+    }
 }
 
 var load_data_batch = function(batch_to_load) {
