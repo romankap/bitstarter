@@ -60,7 +60,7 @@ var update_displayed_batch_and_epoch_nums = function(new_batch_num, new_epoch_nu
             $('#clients-connected').html('You are currently part of a net of size ' +
                 '<span class=\"color-blue\">' + num_of_different_clients + "</span>, thank you!");
         }
-        else if (num_of_different_clients !== undefined && num_of_different_clients === 1) {
+        else if (num_of_different_clients !== undefined ) {
             $('#clients-connected').html('You are the first trainer, way to go!');
         }
     }
