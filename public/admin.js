@@ -3,17 +3,14 @@ var curr_model_ID=-1, curr_epoch_num=0;
 var curr_sample_num=0;
 
 var total_samples_predicted=0, total_predicted_correctly=0;
-var curr_net_accuracy=0, curr_validation_accuracy=0;
+var curr_net_accuracy=0;
 
 // ------------------------
 // BEGIN CIFAR10 SPECIFIC STUFF
 // ------------------------
-var classes_txt = ['airplane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck'];
 
-var use_validation_data = true;
-var first_execution = true;
-var check_net_accuracy_frequency = 20 * 1000;
-var total_training_batches; //TODO: change batch numbers and inputs accordingly
+var check_net_accuracy_frequency = 60 * 1000;
+var total_training_batches;
 var samples_in_test_batch, samples_in_validation_batch;
 var get_validation_model_interval, validation_batch_interval;
 var wait_for_testing_net_to_load_interval, testing_batch_interval;
@@ -31,6 +28,7 @@ var initialize_model_parameters = function(data) {
 // int main
 $(window).load(function() {
     console.log("Hello Admin, your wish is net's command");
+	is_batch_loaded = false;
     load_data_batch("validation");
     var AJAX_init_parameters = {model_name: "CIFAR10" };
     $.get('/get_init_model_from_server', AJAX_init_parameters, function(data) {
@@ -44,8 +42,7 @@ $(window).load(function() {
         reset_all();
         update_net_param_display();
 
-        is_batch_loaded = false;
-
+        
         //load_data_batch(0); // async load train set batch 0 (6 total train batches)
         //load_data_batch(validate_batch); // async load test set (batch 6)
         //start_fun();
@@ -101,7 +98,7 @@ var get_testing_accuracy = function(){
 }
 
 var get_validation_model_from_server = function () {
-    if(get_net_accuracy) {
+    if(get_net_accuracy ) {
         get_net_and_current_training_batch_from_server();
         validation_batch_interval = setInterval(validate_batch, 0);
     }
@@ -110,7 +107,7 @@ var get_validation_model_from_server = function () {
 }
 
 var validate_batch = function() {
-    if (!get_net_accuracy || !is_net_loaded_from_server) return;
+    if (!get_net_accuracy || !is_net_loaded_from_server || !is_batch_loaded) return;
 
     if(total_samples_predicted < samples_in_validation_batch){
         predict_samples_group(sample_validation_instance);
@@ -215,7 +212,6 @@ var get_validation_score = function() {
 
 }
 
-
 // Goes over the entire testing batch and updates curr_net_accuracy
 var predict_samples_group = function(sample_instance_function) {
     var num_classes = net.layers[net.layers.length-1].out_depth;
@@ -224,21 +220,11 @@ var predict_samples_group = function(sample_instance_function) {
         var sample = sample_instance_function(curr_sample_num);
         var sample_label = sample.label;  // ground truth label
 
-        // forward prop it through the network
-        var aavg = new convnetjs.Vol(1,1,num_classes,0.0);
-        // ensures we always have a list, regardless if above returns single item or list
-        var xs = [].concat(sample.x);
-        var n = xs.length;
-        for(var i=0;i<n;i++) {
-            var a = net.forward(xs[i]);
-            aavg.addFrom(a);
+        net.forward(sample.x);
+        var yhat = net.getPrediction();
+        if( yhat === sample_label) {
+            total_predicted_correctly++;
         }
-        var preds = [];
-        for(var k=0;k<aavg.w.length;k++) { preds.push({k:k,p:aavg.w[k]}); }
-        preds.sort(function(a,b){return a.p<b.p ? 1:-1;});
-
-        var correct = preds[0].k===sample_label;
-        if(correct) total_predicted_correctly++;
         total_samples_predicted++;
 
         curr_sample_num++;
