@@ -56,7 +56,7 @@ app.get('/admin', function(request, response){
 
 /////// =======  Client status API  =========
 
-app.get('/get_node_name', function(request, response) {		// Unused 
+app.get('/get_node_name', function(request, response) {		// Unused
   response.send((++node_count).toString())
 });
 
@@ -83,12 +83,12 @@ app.get('/get_net_batch_all', function(request, response) {   //
                         net: net_manager.get_net().toJSON(),
                         batch_num: batch_num,
                         batch_size:  net_manager.get_batch_size(),
-						epoch_num: epoch_to_send,
+						            epoch_num: epoch_to_send,
                         model_ID: net_manager.get_model_ID(),
                         trainer_param:  net_manager.get_trainer_param(),
                         batch_url:  net_manager.get_batch_url(batch_num),
                         dataset_name: net_manager.get_dataset_name(),
-						total_different_clients: net_manager.get_different_clients_num(),
+						            total_different_clients: net_manager.get_different_clients_num(),
                      };
     console.log(" <get_net_and_batch_from_server> Sending batch_num: " + parameters.batch_num + " to client: " + request.query.client_ID);
     response.send(parameters);

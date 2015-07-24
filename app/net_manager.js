@@ -61,6 +61,23 @@ var add_latencies_to_server = function(latency_to_server){
 	}
 }
 
+var insert_to_clients_dict = function(client_name)   {
+	if (!check_if_in_clients_dict(client_name)) {
+		clients_dict[client_name] = true;
+		total_different_clients++;
+	}
+	last_contributing_client = client_name;
+};
+
+var check_if_in_clients_dict = function(client_name) {
+	if (clients_dict[client_name] !== true) {
+		return false;
+	}
+	return true;
+};
+
+
+
 var net;          // Most updated netowrk
 var dataset;      // Currently used datastet
 
@@ -84,20 +101,6 @@ var validation_accuracies_array = new Array();
 var last_validation_accuracy=0, testing_accuracy=0;
 
 module.exports = {
-    check_if_in_clients_dict: function(client_name) {
-        if (clients_dict[client_name] !== true) {
-            return false;
-        }
-        return true;
-    },
-	
-    insert_to_clients_dict: function(client_name)   {
-        if (!check_if_in_clients_dict(client_name)) {
-            clients_dict[client_name] = true;
-            total_different_clients++;
-        }
-        last_contributing_client = client_name;
-    },
 
 	get_different_clients_num : function() {
 		return total_different_clients;
@@ -118,11 +121,11 @@ module.exports = {
 		}
 		return false;
 	},
-	
+
 	get_epochs_count: function () {
         return epochs_count;
     },
-	
+
 	// Stats-related
 	reset_stats: function() {
 		fw_timings.length=0; fw_timings_sum=0;
@@ -220,7 +223,7 @@ module.exports = {
 
 		return stats_in_csv;
 	},
-	
+
     get_net: function() {
         return net;
     },
@@ -250,12 +253,12 @@ module.exports = {
             base_net: net,
             id: model_ID,
             dataset: dataset.name,
-			
-			total_training_batches: 		dataset.train_batches,
-			samples_in_training_batch: 		dataset.train_size,
-			samples_in_testing_batch: 		dataset.test_size,
-			samples_in_validation_batch: 	dataset.validation_size,
-			minimum_epochs_to_train: 		dataset.minimum_epochs_to_train,
+
+      			total_training_batches: 		dataset.train_batches,
+      			samples_in_training_batch: 		dataset.train_size,
+      			samples_in_testing_batch: 		dataset.test_size,
+      			samples_in_validation_batch: 	dataset.validation_size,
+      			minimum_epochs_to_train: 		dataset.minimum_epochs_to_train,
         };
     },
 
@@ -277,7 +280,7 @@ module.exports = {
           add_gradients(net, JSON.parse(model_from_client.net));
 		  insert_to_clients_dict(model_from_client.client_ID);
       },
-	  
+
 	get_batch_num:	function() {
 		return last_batch;
 	},
@@ -298,23 +301,26 @@ module.exports = {
         return curr_batch;
     },
 
-	
+
     reset_batch_num: function () {
         last_batch = 0;
     },
-	
+
 	reset_model: function() {
 		model_ID = generate_random_number();
 		last_batch = 0;
 		epochs_count = 0;
-		
+
 		eval(dataset.init_def);
 		trainer_param = {
           learning_rate: trainer.learning_rate,
           momentum: trainer.momentum,
           l2_decay: trainer.l2_decay,
-        };
-		
+          l1_decay: trainer.l1_decay,
+          method: trainer.method,
+          batch_size: trainer.batch_size
+    };
+
 		is_model_in_testing_mode = false;
 	},
 
@@ -335,12 +341,15 @@ module.exports = {
         total_batches = dataset.train_batches;
         batch_size = dataset.train_size;
         last_batch = 0;
-		epochs_count = 0;
-		
+		    epochs_count = 0;
+
         trainer_param = {
-          learning_rate: trainer.learning_rate,
-          momentum: trainer.momentum,
-          l2_decay: trainer.l2_decay,
+              learning_rate: trainer.learning_rate,
+              momentum: trainer.momentum,
+              l2_decay: trainer.l2_decay,
+              l1_decay: trainer.l1_decay,
+              method: trainer.method,
+              batch_size: trainer.batch_size
         };
     }
 };

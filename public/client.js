@@ -412,7 +412,7 @@ var reset_all = function() {    // Just reset any visual cues of doing anything
     // reinit windows that keep track of val/train accuracies
     xLossWindow.reset();
     wLossWindow.reset();
-    trainAccWindow.reset();
+  //  trainAccWindow.reset();
     valAccWindow.reset();
     testAccWindow.reset();
     lossGraph = new cnnvis.Graph(); // reinit graph too
@@ -436,13 +436,14 @@ var init_all = function() {
     $.get('/get_net_batch_all', parameters, function(data) {
 		curr_batch_num = data.batch_num;
         curr_epoch_num = data.epoch_num;
-		
+
         curr_batch_num = data.batch_num;
         batch_size = data.batch_size;
 
         load_data_batch(data.batch_url);
-		update_displayed_batch_and_epoch_nums(curr_batch_num, curr_epoch_num, data.total_different_clients);
-		
+		      update_displayed_batch_and_epoch_nums(curr_batch_num, curr_epoch_num, data.total_different_clients);
+
+        
         if(net != undefined) {
           old_net = net;
         }
@@ -451,16 +452,17 @@ var init_all = function() {
         if(model_id != data.model_ID) {
           $.getScript(data.dataset_name + '/labels.js');
         }
+        trainer = new convnetjs.SGDTrainer(net, data.trainer_param);
+
         model_id  = data.model_ID;
 
         is_net_loaded_from_server = true;
-		
-		
+
+
         get_from_server_end = new Date().getTime();
         latency_from_server = get_from_server_end - get_from_server_start;
-		reset_stats();
-		
-        trainer = new convnetjs.SGDTrainer(net, data.trainer_param);
+		    reset_stats();
+
 
 
         console.log("<init_all> Received " + parameters.model_name + " net back. model_ID: " + data.model_ID);
@@ -472,7 +474,7 @@ var init_all = function() {
 var post_gradients_to_server = function() {
   is_training_active = false;
   post_to_server_start = new Date().getTime();
-	
+
   var gradients = net;
   if(old_net != undefined) {
     gradients_calculator.traverse(gradients, old_net, "");
@@ -550,6 +552,23 @@ var sample_training_instance = function (sample_num) {
     var label_num = curr_batch_num * batch_size + sample_num;
     return {x:new_Vol, label:labels[label_num]};
 }
+
+// MNIST
+/*var sample_training_instance = function (sample_num) {
+   // fetch the appropriate row of the training image and reshape into a Vol
+  var p = img_data.data;
+  var x = new convnetjs.Vol(28,28,1,0.0);
+  var W = 28*28;
+  for(var i=0;i<W;i++) {
+    var ix = ((W * sample_num) + i) * 4;
+    x.w[i] = p[ix]/255.0;
+  }
+  x = convnetjs.augment(x, 24);
+
+    var label_num = curr_batch_num * batch_size + sample_num;
+    return {x:x, label:labels[label_num]};
+}*/
+
 
 var step = function(sample, sample_num) {
 
