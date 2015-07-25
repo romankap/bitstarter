@@ -632,20 +632,28 @@ var step = function(sample, sample_num) {
         }
     }*/
 }
-
+var realPause = false;
 var compute = function() {
     paused = !paused;
 
     var btn = document.getElementById('compute-btn');
     if (paused) {
-        btn.value = 'Compute';
+        $("#compute-btn").text('Train');
         clearInterval(train_on_batch_interval);
-        post_gradients_to_server();
+
+            is_training_active = false;
+      //  post_gradients_to_server();
     }
     else {
-        btn.value = 'Pause';
+        if(realPause == true) {
+            is_training_active = true;
+            train_on_batch_interval = setTimeout(train_on_batch, 0);
+            return;
+        }
+        $("#compute-btn").text('Pause');
         init_all();
         start_working();
+        realPause=true;
     }
 }
 // int main

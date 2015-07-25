@@ -100,7 +100,7 @@ $(window).load(function() {
 
 
         update_net_param_display();
-
+        load_net_schem();
     });
 });
 
@@ -700,10 +700,16 @@ var change_dataset = function(dataset) {
   });
 }
 
+var load_net_schem = function() {
+  $.get('/get_current_net_schem', function(data) {
+      $("#newnet").text(data);
+  });
+}
+
 var change_net = function() {
     var new_init_model = $("#newnet").val();
     //rand = get_random_number();
-    var parameters = {model_name: "CIFAR10", new_init_model: new_init_model};
+    var parameters = {new_init_model: new_init_model};
     console.log("<change_net> Sending the following new CIFAR10 init_model: " + new_init_model);
     reset_all();
     $.post('/store_new_model_on_server', parameters, function(data) {

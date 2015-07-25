@@ -3,6 +3,8 @@
  */
 var convnetjs = require('convnetjs');
 
+var network_schem;
+
 function isNumeric(num) {
     return !isNaN(num)
 }
@@ -266,8 +268,29 @@ module.exports = {
       return dataset.gen_batch_url(batch_num);
     },
 
+    get_current_net_schem: function() {
+        return dataset.init_def;
+    },
+
     set_net: function(new_net) {
-        net = new_net;
+        network_schem = new_net;
+
+        model_ID = generate_random_number();
+        last_batch = 0;
+        epochs_count = 0;
+
+
+        eval(network_schem);
+        trainer_param = {
+              learning_rate: trainer.learning_rate,
+              momentum: trainer.momentum,
+              l2_decay: trainer.l2_decay,
+              l1_decay: trainer.l1_decay,
+              method: trainer.method,
+              batch_size: trainer.batch_size
+        };
+
+        is_model_in_testing_mode = false;
     },
 
     add_gradients: function(update_net) {
@@ -315,7 +338,8 @@ module.exports = {
 		last_batch = 0;
 		epochs_count = 0;
 
-		eval(dataset.init_def);
+
+		eval(network_schem);
 		trainer_param = {
           learning_rate: trainer.learning_rate,
           momentum: trainer.momentum,
@@ -340,7 +364,9 @@ module.exports = {
     set_dataset: function(dataset_i) {
         dataset = require('./models/' + dataset_i + '.js');
 
-        eval(dataset.init_def);
+        network_schem = dataset.init_def;
+
+        eval(network_schem);
         model_id = this.generate_new_model_ID();
         total_batches = dataset.train_batches;
         batch_size = dataset.train_size;

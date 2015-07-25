@@ -181,9 +181,8 @@ app.post('/reset_model', function(request, response){
 
 app.post('/store_new_model_on_server', function(request, response){
     net_manager.set_net(request.body.new_init_model);
-    var new_model_ID = cifar10.net_manager.get_model_ID();
-    response.send("Model " + request.body.model_name + " was changed.");
-    console.log("<store_new_model_on_server> Net was changed " + request.body.new_init_model);
+    response.send("Model was changed, new ID " + net_manager.get_model_ID());
+    console.log("<store_new_model_on_server> Net was changed.. New ID: " + net_manager.get_model_ID());
 });
 
 app.post('/store_validation_accuracy_on_server', function(request, response){
@@ -222,6 +221,10 @@ app.get('/get_net_snapshot', function(request, response) {
     var net_in_JSON_to_send = net_manager.get_net().toJSON();
 
     response.send(net_in_JSON_to_send);
+});
+
+app.get('/get_current_net_schem', function(request, response) {
+    response.send(net_manager.get_current_net_schem());
 });
 
 app.post('/change_dataset', function(request, response) {
