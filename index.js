@@ -6,7 +6,7 @@ var http = require('http');
 var fs = require('fs');
 var config = require('./config');
 
-var DEFAULT_DATASET = "cifar10";
+var DEFAULT_DATASET = "mnist";
 
 // Init. default net
 var net_manager = require('./app/net_manager');
@@ -54,10 +54,14 @@ app.get('/admin', function(request, response){
 });
 
 
-/////// =======  Client status API  =========
 
 app.get('/get_node_name', function(request, response) {		// Unused
   response.send((++node_count).toString())
+});
+
+
+app.get('/get_admin_batch', function(request, response) {		// Unused
+  response.send(net_manager.gen_admin_batch_url())
 });
 
 //==========================================
@@ -98,24 +102,23 @@ app.get('/get_net_batch_all', function(request, response) {   //
 // To be used by the Admin
 app.get('/get_net_and_current_training_batch_from_server', function(request, response){
     if (net_manager.is_need_to_send_net_for_testing(request.query.model_ID, request.query.epoch_num)) {
-        var model_parameters = net_manager.get_model_parameters();
-        var parameters = {	net : net_manager.get_net(),
-							batch_num: net_manager.get_batch_num(),
-							epoch_num: net_manager.get_epochs_count(),
-							model_ID: net_manager.get_model_ID(),
-							model_param: model_parameters,
-							total_different_clients: net_manager.get_different_clients_num(),
-							last_contributing_client: net_manager.get_last_contributing_client()};
+        var parameters = {	net : net_manager.get_net().toJSON(),
+              							batch_num: net_manager.get_batch_num(),
+              							epoch_num: net_manager.get_epochs_count(),
+              							model_ID: net_manager.get_model_ID(),
+              							model_param: net_manager.get_model_parameters(),
+              							total_different_clients: net_manager.get_different_clients_num(),
+              							last_contributing_client: net_manager.get_last_contributing_client()};
 
         console.log(" <get_net_and_current_training_batch_from_server> sending net with model_ID " + parameters.model_ID +
                         " and in epoch_num " + parameters.epoch_num + " to Admin");
     }
     else {
         var parameters = {	batch_num: net_manager.get_batch_num(),
-							epoch_num: net_manager.get_epochs_count(),
-							model_ID: net_manager.get_model_ID(),
-							total_different_clients: net_manager.get_different_clients_num(),
-							last_contributing_client: net_manager.get_last_contributing_client()};
+              							epoch_num: net_manager.get_epochs_count(),
+              							model_ID: net_manager.get_model_ID(),
+              							total_different_clients: net_manager.get_different_clients_num(),
+              							last_contributing_client: net_manager.get_last_contributing_client()};
 
         console.log(" <get_net_and_current_training_batch_from_server> NOT sending net to Admin. Model_ID " + parameters.model_ID +
                         " & epoch_num " + parameters.epoch_num + " didn't update");
@@ -169,6 +172,7 @@ app.post('/update_model_from_gradients', function(request, response) {
 });
 
 app.post('/reset_model', function(request, response){
+
     net_manager.reset_model();
     var new_model_ID = net_manager.get_model_ID();
     response.send("Model was " + request.body.model_name + " resetted. New model_ID: " + new_model_ID);
@@ -201,11 +205,13 @@ app.post('/store_validation_accuracy_on_server', function(request, response){
 
 
 app.get('/get_validation_net', function(request, response) {
-    var model_parameters = net_manager.get_model_parameters();
+
     var parameters = {	net : net_manager.get_net(),
+
 						batch_num: net_manager.get_batch_num(),
 						epoch_num: net_manager.get_epochs_count(),
 						model_ID: net_manager.get_model_ID(),
+            model_param: net_manager.get_model_parameters(),
 						total_different_clients: net_manager.get_different_clients_num(),
 						last_contributing_client: net_manager.get_last_contributing_client()
 					};
@@ -216,6 +222,13 @@ app.get('/get_net_snapshot', function(request, response) {
     var net_in_JSON_to_send = net_manager.get_net().toJSON();
 
     response.send(net_in_JSON_to_send);
+});
+
+app.post('/change_dataset', function(request, response) {
+    net_manager.set_dataset(request.body.name);
+    net_manager.reset_model();
+
+    response.send("Crazy");
 });
 
 

@@ -3,7 +3,7 @@
 <!--[if IE 9]> <html lang="en" class="ie9"> <![endif]-->
 <!--[if !IE]><!--> <html lang="en"> <!--<![endif]-->
 <head>
-    <title>Network Training Screen</title>
+    <title>Entire Network Admin</title>
 
     <link rel="shortcut icon" href="admin_favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -27,22 +27,13 @@
     <script src="build/util.js"></script>
     <script src="build/convnet.js"></script>
 
-    <script src="cifar10/cifar10_labels.js"></script>
-    <!--<script type="text/javascript" src="jquery.import_js.js"></script>-->
-    <script src="client.js"></script>
     <script src="admin.js"></script>
 
 </head>
 
 <body>
 
-<div class="navbar navbar-inverse navbar-fixed-top">
-    <div class="navbar-inner">
-        <div class="container">
-            <a class="brand" href="#">DL CrowdCruncher</a>
-        </div>
-    </div>
-</div>
+
 
 <!--<div class="container">
     <h1>Example image</h1>
@@ -51,61 +42,85 @@
 
 <div class="container">
     <div class="row-fluid heading">
-        <div class="col-sm-12 text-center">
-            <h2 ><a href="http://cs.stanford.edu/people/karpathy/convnetjs/">ConvNetJS</a> MNIST demo</h2>
-            <h3 id="batch-num" class="color-green" ></h3>
+        <div class="text-center">
+            <h2 ><a href="http://cs.stanford.edu/people/karpathy/convnetjs/">ConvNetJS</a> Admin</h2>
+            <h3>Current dataset: <span id="data_name">Loading...</span></h3>
             <h1 class="convnet-headline">Training Stats</h1>
 
-            <div class="secpart col-sm-push-1 col-sm-4">
-                <input id="toggle-validate-btn" type="submit" value="Start Validation" onclick="toggle_validate();" class="btn btn-large btn-success start-working-btn"/>
+            <h3 id="batch-num" class="color-green" ></h3>
+            <h4 id="total-clients" class="color-green" ></h4>
 
-                <div id="trainstats"></div>
+            <div class="col-sm-12 margin-bottom-15">
+                <div class="col-sm-3">
+                    <div id="restart-checkbox-div" class="col-sm-1">
+                        <label class="checkbox-inline  margin-bottom-15" style="word-wrap:break-word">
+                            <input id="restart-checkbox" style="vertical-align: middle;" type="checkbox" value="force-restart">
+                            Force Restart (re-validate on the same epoch)
+                        </label>
+                    </div>
+                    <button id="toggle-validate-btn" type="submit"  onclick="toggle_validate();" class="btn btn-large btn-warning start-working-btn ">
+                        <i id="validate-icon" class="fa fa-play-circle"></i> Start Validating
+                    </button>
+                </div>
 
-                <table id="controls">
-                    <tr><td>Learning rate: </td>  <td> <input name="lri" type="text" maxlength="20" id="lr_input"/></td></tr>
-                    <tr><td>Momentum: </td>  <td><input name="momi" type="text" maxlength="20" id="momentum_input"/></td></tr>
-                    <tr><td>Batch size: </td>  <td><input name="bsi" type="text" maxlength="20" id="batch_size_input"/></td></tr>
-                    <tr><td>Weight decay: </td>  <td><input name="wdi" type="text" maxlength="20" id="decay_input"/></td></tr>
-                    <!--input id="buttonwd" type="submit" value="change" onclick="change_decay();"/-->
-                </table>
-            </div>
-            <div class="secpart">
-                <div class="col-sm-4">
-                    Loss:<br />
-                    <canvas id="lossgraph">
-                    </canvas>
-                    <br />
-                    <input id="buttoncg" type="submit" value="clear graph" onclick="clear_graph();"/>
+                <div style="clear:both;"></div>
+                <div id="accuracy-block">
+                    <h3 id="testset_acc"></h3>
+                    <h5 id="total-samples-tested"></h5>
                 </div>
             </div>
-            <div style="clear:both;"></div>
 
-            <h3 id="testset_acc"></h3>
-
-
-
-            <div class="col-sm-12 text-center margin-bottom-30">
-                <h1 class="convnet-headline">Click to reset net's weights</h1>
-                <button id="reset-model-btn" class="btn btn-large btn-danger start-computing-btn margin-top-15" onclick="reset_model();">Reset the net</button>
-                <!--<div id="trainstats"></div>-->
+            <div class="col-sm-12 margin-bottom-15">
+                <a href="/get_all_stats" download="stats_direct.csv" class="btn btn-large btn-success">
+                    <i class="fa fa-table"></i> Download stats
+                </a>
+                <a href="/get_net_snapshot" download="net_in_JSON.txt" class="btn btn-info">
+                    <i class="fa fa-camera-retro"></i> Download net's <br/> JSON snapshot
+                </a>
             </div>
-
-            <h1 class="convnet-headline">Instantiate a Network and Trainer</h1>
-            <div>
-                <textarea id="newnet" style="width:100%; height:200px;"></textarea><br />
-                <input id="buttonnn" type="submit" value="change network" onclick="change_net();" style="width:200px;height:30px;"/>
-            </div>
-
-            <div class="divsec">
-                <h1>Network Visualization</h1>
-                <div id="visnet"></div>
-            </div>
-
-            <div class="divsec">
-                <h1>Example predictions on Test set</h1>
-            </div>
-
         </div>
+
+
+        <div class="col-sm-12 text-center margin-bottom-30">
+            <h1 class="convnet-headline">Click to reset net's weights</h1>
+            <button id="reset-model-btn" class="btn btn-large btn-danger start-computing-btn margin-top-15 margin-bottom-20" onclick="reset_model();">
+                <i class="fa fa-undo"></i> Reset the net
+            </button>
+            <table id="controls" class="text-align-left col-sm-4" align="center">
+                <tr><td>Learning rate: </td>  <td> <input name="lri" type="text" maxlength="20" id="lr_input"/></td></tr>
+                <tr><td>Momentum: </td>  <td><input name="momi" type="text" maxlength="20" id="momentum_input"/></td></tr>
+                <tr><td>Batch size: </td>  <td><input name="bsi" type="text" maxlength="20" id="batch_size_input"/></td></tr>
+                <tr><td>Weight decay: </td>  <td><input name="wdi" type="text" maxlength="20" id="decay_input"/></td></tr>
+                <!--input id="buttonwd" type="submit" value="change" onclick="change_decay();"/-->
+            </table>
+            <!--<div id="trainstats"></div>-->
+        </div>
+
+        <div class="col-sm-12 text-center margin-bottom-30">
+            <h1 class="convnet-headline">Choose a dataset</h1>
+            <button id="cifar10" class="btn btn-large  start-computing-btn margin-top-15 margin-bottom-20" onclick="change_dataset('cifar10');" style="margin-right: 100px;">
+                <i class="fa fa-undo"></i> CIFAR-10
+            </button>
+            <button id="mnist" class="btn btn-large  start-computing-btn margin-top-15 margin-bottom-20" onclick="change_dataset('mnist');">
+                <i class="fa fa-undo"></i> MNIST
+            </button>
+        </div>
+
+        <h1 class="convnet-headline">Instantiate a Network and Trainer</h1>
+        <div class="container">
+            <textarea id="newnet"  style="width:90%;height:200px;"></textarea><br />
+            <input id="buttonnn" type="submit" value="change network" onclick="change_net();" style="width:200px;height:30px;"/>
+        </div>
+
+        <div class="divsec">
+            <h1>Network Visualization</h1>
+            <div id="visnet"></div>
+        </div>
+
+        <div class="divsec">
+            <h1>Example predictions on Test set</h1>
+        </div>
+
     </div>
 </div>
 
@@ -114,4 +129,4 @@
 <script src="assets/plugins/respond.js"></script>
 <![endif]-->
 </body>
-</html>	
+</html>

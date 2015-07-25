@@ -25,6 +25,8 @@ var bw_timings_sum, bw_timings_num;
 var latency_to_server, post_to_server_start, post_to_server_end;
 var latency_from_server, get_from_server_start, get_from_server_end;
 
+var dataset_name;
+
 var make_string_ID = function ()
 {
     var text = "";
@@ -429,13 +431,13 @@ var start_client = function() {
 }
 
 
-
 var init_all = function() {
     var parameters = {  client_ID: client_ID };
 
     $.get('/get_net_batch_all', parameters, function(data) {
 		curr_batch_num = data.batch_num;
         curr_epoch_num = data.epoch_num;
+        dataset_name = data.dataset_name;
 
         curr_batch_num = data.batch_num;
         batch_size = data.batch_size;
@@ -443,7 +445,7 @@ var init_all = function() {
         load_data_batch(data.batch_url);
 		      update_displayed_batch_and_epoch_nums(curr_batch_num, curr_epoch_num, data.total_different_clients);
 
-        
+
         if(net != undefined) {
           old_net = net;
         }
@@ -452,12 +454,12 @@ var init_all = function() {
         if(model_id != data.model_ID) {
           $.getScript(data.dataset_name + '/labels.js');
         }
+        $("#data_name").text(data.dataset_name.toUpperCase());
         trainer = new convnetjs.SGDTrainer(net, data.trainer_param);
 
         model_id  = data.model_ID;
 
         is_net_loaded_from_server = true;
-
 
         get_from_server_end = new Date().getTime();
         latency_from_server = get_from_server_end - get_from_server_start;
@@ -509,12 +511,13 @@ var start_working = function() {
     }
     else {
         setTimeout(start_working, 200);
+          console.log('Waiting to start to working...');
     }
 }
 
 var train_on_batch = function() {
     if (is_training_active) {
-        var sample = sample_training_instance(curr_sample_num);
+        var sample = sample_training_instance[dataset_name](curr_sample_num);
         step(sample, curr_sample_num); // process this image
         curr_sample_num++
         setTimeout(train_on_batch, 0);
@@ -529,45 +532,45 @@ var train_on_batch = function() {
     }
 }
 
-var sample_training_instance = function (sample_num) {
-    // fetch the appropriate row of the training image and reshape into a Vol
-    var p = img_data.data;
-    var new_Vol = new convnetjs.Vol(32,32,3,0.0);
-    var W = 32*32;
-    var j=0;
-    for(var dc=0;dc<3;dc++) {
-        var i=0;
-        for(var xc=0;xc<32;xc++) {
-            for(var yc=0;yc<32;yc++) {
-                var ix = ((W * sample_num) + i) * 4 + dc;
-                new_Vol.set(yc,xc,dc,p[ix]/255.0-0.5);
-                i++;
+var sample_training_instance = {    // desperate times call for desperate measures
+    cifar10: function (sample_num, dims) {
+        // fetch the appropriate row of the training image and reshape into a Vol
+        var p = img_data.data;
+        var new_Vol = new convnetjs.Vol(32,32,3,0.0);
+        var W = 32*32;
+        var j=0;
+        for(var dc=0;dc<3;dc++) {
+            var i=0;
+            for(var xc=0;xc<32;xc++) {
+                for(var yc=0;yc<32;yc++) {
+                    var ix = ((W * sample_num) + i) * 4 + dc;
+                    new_Vol.set(yc,xc,dc,p[ix]/255.0-0.5);
+                    i++;
+                }
             }
         }
-    }
-    var dx = Math.floor(Math.random()*5-2);
-    var dy = Math.floor(Math.random()*5-2);
-    new_Vol = convnetjs.augment(new_Vol, 32, dx, dy, Math.random()<0.5); //maybe flip horizontally
+        var dx = Math.floor(Math.random()*5-2);
+        var dy = Math.floor(Math.random()*5-2);
+        new_Vol = convnetjs.augment(new_Vol, 32, dx, dy, Math.random()<0.5); //maybe flip horizontally
 
-    var label_num = curr_batch_num * batch_size + sample_num;
-    return {x:new_Vol, label:labels[label_num]};
+        var label_num = curr_batch_num * batch_size + sample_num;
+        return {x:new_Vol, label:labels[label_num]};
+    },
+    mnist: function (sample_num) {
+         // fetch the appropriate row of the training image and reshape into a Vol
+        var p = img_data.data;
+        var x = new convnetjs.Vol(28,28,1,0.0);
+        var W = 28*28;
+        for(var i=0;i<W;i++) {
+          var ix = ((W * sample_num) + i) * 4;
+          x.w[i] = p[ix]/255.0;
+        }
+        x = convnetjs.augment(x, 24);
+
+          var label_num = curr_batch_num * batch_size + sample_num;
+          return {x:x, label:labels[label_num]};
+      }
 }
-
-// MNIST
-/*var sample_training_instance = function (sample_num) {
-   // fetch the appropriate row of the training image and reshape into a Vol
-  var p = img_data.data;
-  var x = new convnetjs.Vol(28,28,1,0.0);
-  var W = 28*28;
-  for(var i=0;i<W;i++) {
-    var ix = ((W * sample_num) + i) * 4;
-    x.w[i] = p[ix]/255.0;
-  }
-  x = convnetjs.augment(x, 24);
-
-    var label_num = curr_batch_num * batch_size + sample_num;
-    return {x:x, label:labels[label_num]};
-}*/
 
 
 var step = function(sample, sample_num) {

@@ -1,13 +1,13 @@
 module.exports = {
 	name: "mnist",
-  
+
 	train_size: 500,
 	train_batches: 50000 / 500,
 	validation_size: 10000,
 	test_size: 10000,
-  
+
 	minimum_epochs_to_train: 10,
-  
+
 	init_def: "layer_defs = [];\n\
 	layer_defs.push({type:'input', out_sx:24, out_sy:24, out_depth:1});\n\
 	layer_defs.push({type:'conv', sx:5, filters:8, stride:1, pad:2, activation:'relu'});\n\
@@ -23,5 +23,7 @@ module.exports = {
 
 	gen_batch_url: function(batch) {
 		return "http://tx.technion.ac.il/~sromanka/mnist/500/mnist_batch_" + batch + ".png";
-	}		
+	},
+
+	admin_url: "http://tx.technion.ac.il/~sromanka/mnist/500/mnist_admin.png"
 };

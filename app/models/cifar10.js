@@ -4,12 +4,12 @@
 
 module.exports = {
   name: "cifar10",
-  
+
   train_size: 500,
   train_batches: 45000 / 500,
   validation_size: 5000,
   test_size: 10000,
-  
+
   minimum_epochs_to_train: 50,
 
   init_def: "layer_defs = [];\n\
@@ -29,5 +29,8 @@ module.exports = {
 
   gen_batch_url: function(batch) {
     return "http://tx.technion.ac.il/~sromanka/cifar10/500/cifar10_batch_" + batch + ".png";;
-  }
+  },
+
+	admin_url: "http://tx.technion.ac.il/~sromanka/cifar10/500/cifar10_admin.png"
+
 };

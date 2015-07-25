@@ -250,8 +250,8 @@ module.exports = {
 
     get_base_model_data: function() {
         return {
-            base_net: net,
-            id: model_ID,
+            base_net: net.toJSON(),
+            model_ID: model_ID,
             dataset: dataset.name,
 
       			total_training_batches: 		dataset.train_batches,
@@ -272,6 +272,10 @@ module.exports = {
 
     add_gradients: function(update_net) {
         add_gradients(net, update_net);
+    },
+
+    gen_admin_batch_url: function() {
+      return dataset.admin_url;
     },
 
     update_model_from_gradients: function(model_from_client) {
