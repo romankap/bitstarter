@@ -29,7 +29,20 @@ function update_epoch_end_time_and_duration() {
 	epoch_end_time = getTime();
 	time_to_train_epochs_array.push(epoch_end_time - epoch_start_time);
 }
+var reset_stats_func = function() {
+		fw_timings.length=0; fw_timings_sum=0;
+		bw_timings.length=0; bw_timings_sum=0;
+		latencies_to_server.length=0; latencies_to_server_sum=0;
+		latencies_from_server.length=0; latencies_from_server_sum=0;
+		time_to_train_epochs_array.length=0; epoch_start_time=0; epoch_end_time=0;
+		validation_accuracies_array.length=0;
 
+    clients_dict = {};
+    total_different_clients=0;
+    last_contributing_client = "<no client>";
+
+		last_validation_accuracy=0; testing_accuracy=0;
+	};
 
 var gradients_calculator = {
     traverse: function (net_weight, gradient, property_name) {
@@ -129,20 +142,7 @@ module.exports = {
     },
 
 	// Stats-related
-	reset_stats: function() {
-		fw_timings.length=0; fw_timings_sum=0;
-		bw_timings.length=0; bw_timings_sum=0;
-		latencies_to_server.length=0; latencies_to_server_sum=0;
-		latencies_from_server.length=0; latencies_from_server_sum=0;
-		time_to_train_epochs_array.length=0; epoch_start_time=0; epoch_end_time=0;
-		validation_accuracies_array.length=0;
-
-    clients_dict = {};
-    total_different_clients=0;
-    last_contributing_client = "<no client>";
-
-		last_validation_accuracy=0; testing_accuracy=0;
-	},
+	reset_stats: reset_stats_func,
 
 	get_fw_timings_average : function() {
 		if (fw_timings.length > 0)
@@ -343,7 +343,7 @@ module.exports = {
 		last_batch = 0;
 		epochs_count = 0;
 
-    reset_stats();
+    reset_stats_func();
 		eval(network_schem);
 		trainer_param = {
           learning_rate: trainer.learning_rate,
