@@ -137,8 +137,13 @@ module.exports = {
 		time_to_train_epochs_array.length=0; epoch_start_time=0; epoch_end_time=0;
 		validation_accuracies_array.length=0;
 
+    clients_dict = {};
+    total_different_clients=0;
+    last_contributing_client = "<no client>";
+
 		last_validation_accuracy=0; testing_accuracy=0;
 	},
+
 	get_fw_timings_average : function() {
 		if (fw_timings.length > 0)
 			return fw_timings_sum/fw_timings.length;
@@ -338,7 +343,7 @@ module.exports = {
 		last_batch = 0;
 		epochs_count = 0;
 
-
+    reset_stats();
 		eval(network_schem);
 		trainer_param = {
           learning_rate: trainer.learning_rate,
