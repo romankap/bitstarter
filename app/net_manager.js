@@ -253,7 +253,7 @@ module.exports = {
     get_base_model_data: function() {
         return {
             base_net: net.toJSON(),
-            model_ID: model_ID,
+            model_ID: model_id,
             dataset: dataset.name,
 
       			total_training_batches: 		dataset.train_batches,
@@ -269,13 +269,13 @@ module.exports = {
     },
 
     get_current_net_schem: function() {
-        return dataset.init_def;
+        return network_schem;
     },
 
     set_net: function(new_net) {
         network_schem = new_net;
 
-        model_ID = generate_random_number();
+        model_id = generate_random_number();
         last_batch = 0;
         epochs_count = 0;
 

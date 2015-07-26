@@ -36,10 +36,10 @@ var testAccWindow = new cnnutil.Window(50, 1);
 var curr_batch_num;
 
 var update_net_param_display = function() {
-    document.getElementById('lr_input').value = trainer.learning_rate;
-    document.getElementById('momentum_input').value = trainer.momentum;
-    document.getElementById('batch_size_input').value = trainer.batch_size;
-    document.getElementById('decay_input').value = trainer.l2_decay;
+//  document.getElementById('lr_input').value = trainer.learning_rate;
+//    document.getElementById('momentum_input').value = trainer.momentum;
+//    document.getElementById('batch_size_input').value = trainer.batch_size;
+//    document.getElementById('decay_input').value = trainer.l2_decay;
 }
 
 

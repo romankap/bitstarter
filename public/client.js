@@ -3,6 +3,7 @@ var net, trainer;
 var data_img_elt;
 var img_data;
 
+var UPDATE_INTERVAL_MS = 500;
 
 var client_name;
 
@@ -395,10 +396,10 @@ var valAccWindow = new cnnutil.Window(100);
 var testAccWindow = new cnnutil.Window(50, 1);
 
 var update_net_param_display = function() {
-    document.getElementById('lr_input').value = trainer.learning_rate;
-    document.getElementById('momentum_input').value = trainer.momentum;
-    document.getElementById('batch_size_input').value = trainer.batch_size;
-    document.getElementById('decay_input').value = trainer.l2_decay;
+  //  document.getElementById('lr_input').value = trainer.learning_rate;
+  //  document.getElementById('momentum_input').value = trainer.momentum;
+  //  document.getElementById('batch_size_input').value = trainer.batch_size;
+  //  document.getElementById('decay_input').value = trainer.l2_decay;
 }
 
 var clear_graph = function() {
@@ -430,6 +431,7 @@ var start_client = function() {
     });
 }
 
+var labels_loaded = true;
 
 var init_all = function() {
     var parameters = {  client_ID: client_ID };
@@ -452,7 +454,10 @@ var init_all = function() {
         net = new convnetjs.Net();
         net.fromJSON(data.net);
         if(model_id != data.model_ID) {
-          $.getScript(data.dataset_name + '/labels.js');
+          labels_loaded = false;
+          $.getScript(data.dataset_name + '/labels.js', function() {
+              labels_loaded = true;
+          });
         }
         $("#data_name").text(data.dataset_name.toUpperCase());
         trainer = new convnetjs.SGDTrainer(net, data.trainer_param);
@@ -503,7 +508,7 @@ var post_gradients_to_server = function() {
 }
 
 var start_working = function() {
-    if (is_net_loaded_from_server && is_batch_loaded) {
+    if (is_net_loaded_from_server && is_batch_loaded && labels_loaded) {
         is_training_active = true;
         curr_sample_num = 0;
         train_on_batch_interval = setTimeout(train_on_batch, 0);
@@ -573,6 +578,7 @@ var sample_training_instance = {    // desperate times call for desperate measur
 }
 
 
+var last_time = 0;
 var step = function(sample, sample_num) {
 
     var x = sample.x;
@@ -582,7 +588,7 @@ var step = function(sample, sample_num) {
     var stats = trainer.train(x, y);
     var lossx = stats.cost_loss;
     var lossw = stats.l2_decay_loss;
-	add_to_fw_and_bw_timing_stats(stats.fwd_time, stats.bwd_time);
+  	add_to_fw_and_bw_timing_stats(stats.fwd_time, stats.bwd_time);
 
     // keep track of stats such as the average training error and loss
     var yhat = net.getPrediction();
@@ -591,22 +597,22 @@ var step = function(sample, sample_num) {
     wLossWindow.add(lossw);
     trainAccWindow.add(train_acc);
 
+    var time = new Date().getTime();
     // visualize training status
-    var train_elt = document.getElementById("trainstats");
-    train_elt.innerHTML = '';
-    var t = 'Forward time per example: ' + stats.fwd_time + 'ms';
-    train_elt.appendChild(document.createTextNode(t));
-    train_elt.appendChild(document.createElement('br'));
-    var t = 'Backprop time per example: ' + stats.bwd_time + 'ms';
-    train_elt.appendChild(document.createTextNode(t));
-    train_elt.appendChild(document.createElement('br'));
-    var t = 'Classification loss: ' + f2t(xLossWindow.get_average());
-    train_elt.appendChild(document.createTextNode(t));
-    train_elt.appendChild(document.createElement('br'));
-    var t = 'L2 Weight decay loss: ' + f2t(wLossWindow.get_average());
-    train_elt.appendChild(document.createTextNode(t));
-    train_elt.appendChild(document.createElement('br'));
-    var t = 'Training accuracy: ' + f2t(trainAccWindow.get_average());
+    if( (time - last_time) > UPDATE_INTERVAL_MS) {
+
+      document.getElementById("fwdTime").innerHTML = 'Forward time per example: ' + stats.fwd_time + 'ms';
+
+      document.getElementById("bpTime").innerHTML = 'Backprop time per example: ' + stats.bwd_time + 'ms';
+
+      document.getElementById("clsLoss").innerHTML = 'Classification loss: ' + f2t(xLossWindow.get_average());
+
+      document.getElementById("exmp").innerHTML = 'L2 Weight decay loss: ' + f2t(wLossWindow.get_average());
+
+      last_time = time;
+    }
+
+/*    var t = 'Training accuracy: ' + f2t(trainAccWindow.get_average());
     train_elt.appendChild(document.createTextNode(t));
     train_elt.appendChild(document.createElement('br'));
     var t = 'Validation accuracy: ' + f2t(valAccWindow.get_average());
@@ -614,7 +620,7 @@ var step = function(sample, sample_num) {
     train_elt.appendChild(document.createElement('br'));
     var t = 'Examples seen (out of '+ batch_size + "): " + sample_num;
     train_elt.appendChild(document.createTextNode(t));
-    train_elt.appendChild(document.createElement('br'));
+    train_elt.appendChild(document.createElement('br'));*/
 
     // visualize activations
 /*    if(sample_num % 100 === 0) {
