@@ -27,10 +27,12 @@ module.exports = {
   \n\
   trainer = new convnetjs.SGDTrainer(net, {method:'adadelta', batch_size:3, l2_decay:0.0001});\n",
 
-  gen_batch_url: function(batch) {
+  gen_batch_url: function(batch, batch_size) {
     return "http://tx.technion.ac.il/~sromanka/cifar10/500/cifar10_batch_" + batch + ".png";;
   },
 
-	admin_url: "http://tx.technion.ac.il/~sromanka/cifar10/500/cifar10_admin.png"
+	admin_url: function(batch, batch_size) {
+    "http://tx.technion.ac.il/~sromanka/cifar10/500/cifar10_admin.png"
+  }
 
 };

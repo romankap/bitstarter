@@ -445,7 +445,7 @@ var init_all = function() {
         batch_size = data.batch_size;
 
         load_data_batch(data.batch_url);
-		      update_displayed_batch_and_epoch_nums(curr_batch_num, curr_epoch_num, data.total_different_clients);
+		    update_displayed_batch_and_epoch_nums(curr_batch_num, curr_epoch_num, data.total_different_clients);
 
 
         if(net != undefined) {

@@ -60,13 +60,19 @@ app.get('/get_node_name', function(request, response) {		// Unused
 });
 
 
-app.get('/get_admin_batch', function(request, response) {		// Unused
+app.get('/get_admin_batch', function(request, response) {
   response.send(net_manager.gen_admin_batch_url())
 });
 
 //==========================================
 //=  Store and load models to / from server
 //==========================================
+
+app.get('/magic_change_batch_size',  function(request, response) {
+  net_manager.set_batch_size(request.query.val);
+  net_manager.reset_model();
+  response.send("You hacked us! Restarting model");
+});
 
 app.get('/get_base_model_from_server', function(request, response) {
     response.send(net_manager.get_base_model_data());

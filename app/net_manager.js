@@ -270,11 +270,15 @@ module.exports = {
     },
 
     get_batch_url: function(batch_num) {
-      return dataset.gen_batch_url(batch_num);
+      return dataset.gen_batch_url(batch_num, batch_size);
     },
 
     get_current_net_schem: function() {
         return network_schem;
+    },
+
+    set_batch_size: function(val) {
+        batch_size = val;
     },
 
     set_net: function(new_net) {
@@ -303,7 +307,7 @@ module.exports = {
     },
 
     gen_admin_batch_url: function() {
-      return dataset.admin_url;
+      return dataset.admin_url(batch_size);
     },
 
     update_model_from_gradients: function(model_from_client) {
