@@ -34,7 +34,7 @@ var reset_stats_func = function() {
 		bw_timings.length=0; bw_timings_sum=0;
 		latencies_to_server.length=0; latencies_to_server_sum=0;
 		latencies_from_server.length=0; latencies_from_server_sum=0;
-		time_to_train_epochs_array.length=0; epoch_start_time=0; epoch_end_time=0;
+		time_to_train_epochs_array.length=0; epoch_start_time=getTime(); epoch_end_time=0;
 		validation_accuracies_array.length=0;
 
     clients_dict = {};
@@ -385,8 +385,9 @@ module.exports = {
 
         eval(network_schem);
         model_id = this.generate_new_model_ID();
-        total_batches = dataset.train_batch_size / batch_size;
+
         batch_size = dataset.train_size;
+        total_batches = dataset.train_batch_size / batch_size;
         last_batch = 0;
 		    epochs_count = 0;
 
