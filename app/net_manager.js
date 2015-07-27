@@ -261,12 +261,16 @@ module.exports = {
             model_ID: model_id,
             dataset: dataset.name,
 
-      			total_training_batches: 		dataset.train_batches,
-      			samples_in_training_batch: 		dataset.train_size,
+      			total_training_batches: 		total_batches,
+      			samples_in_training_batch: 		batch_size,
       			samples_in_testing_batch: 		dataset.test_size,
       			samples_in_validation_batch: 	dataset.validation_size,
       			minimum_epochs_to_train: 		dataset.minimum_epochs_to_train,
         };
+    },
+
+    get_minimum_epochs_to_train: function() {
+        return dataset.minimum_epochs_to_train
     },
 
     get_batch_url: function(batch_num) {
@@ -279,6 +283,7 @@ module.exports = {
 
     set_batch_size: function(val) {
         batch_size = val;
+        total_batches = dataset.train_batch_size / batch_size;
     },
 
     set_net: function(new_net) {
@@ -322,6 +327,9 @@ module.exports = {
 	},
 
     request_batch_num: function (client) {
+      if(total_different_clients == 0 && last_batch == 0) {
+        epoch_start_time = getTime();
+      }
         var curr_batch = last_batch;
         console.log("<request_batch_num> sending batch_num " + curr_batch
             + " (out of " + total_batches + ") to node #" + client);
@@ -377,7 +385,7 @@ module.exports = {
 
         eval(network_schem);
         model_id = this.generate_new_model_ID();
-        total_batches = dataset.train_batches;
+        total_batches = dataset.train_batch_size / batch_size;
         batch_size = dataset.train_size;
         last_batch = 0;
 		    epochs_count = 0;

@@ -2,7 +2,7 @@ module.exports = {
 	name: "mnist",
 
 	train_size: 500,
-	train_batches: 50000 / 500,
+	train_batch_size: 50000,
 	validation_size: 10000,
 	test_size: 10000,
 

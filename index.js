@@ -193,7 +193,7 @@ app.post('/store_new_model_on_server', function(request, response){
 
 app.post('/store_validation_accuracy_on_server', function(request, response){
     if (net_manager.is_new_validation_accuracy_worse(request.body.validation_accuracy, request.body.epoch_num)
-            && request.body.epoch_num > cifar10.minimum_epochs_to_train) {
+            && request.body.epoch_num > net_manager.get_minimum_epochs_to_train()) {
         var res = {is_testing_needed: true};
         response.send(res);
         is_model_in_testing_mode = true;

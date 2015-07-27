@@ -419,6 +419,7 @@ var validate_batch = function() {
 
     if(total_samples_predicted < samples_in_validation_batch){
         predict_samples_group(sample_validation_instance);
+        validation_batch_interval = setTimeout(validate_batch, 0);
     }
     else{
         $("#total-samples-tested").text("From " + samples_in_validation_batch + " validation-set samples. Plotted weight activations");
@@ -438,7 +439,7 @@ var validate_batch = function() {
 var get_validation_model_from_server = function () {
     if(get_net_accuracy ) {
         get_net_and_current_training_batch_from_server();
-        validation_batch_interval = setInterval(validate_batch, 1);
+        validation_batch_interval = setTimeout(validate_batch, 0);
     }
     else
         clearInterval(get_validation_model_interval);
@@ -448,7 +449,7 @@ var get_validation_model_from_server = function () {
 var start_validating = function() {
     if (is_batch_loaded) {
         console.log('Starting validation');
-        validation_batch_interval = setInterval(validate_batch, 0);
+        validation_batch_interval = setTimeout(validate_batch, 0);
     }
     else {
         setTimeout(start_validating, 200);
@@ -466,7 +467,7 @@ var toggle_validate = function () {
         get_validation_model_from_server();
 
         btn.innerHTML = '<i class="fa fa-stop"></i> Stop Validating'
-        start_validating();
+      //  start_validating();
     }
     else {
         clearInterval(get_validation_model_interval);
@@ -665,7 +666,7 @@ var store_validation_accuracy_on_server = function() {
             console.log("<store_validation_accuracy_on_server> Worse accuracy after " + curr_epoch_num +
                         " epochs, GOING TO TESTING MODE");
             is_admin_in_testing_mode = true;
-            get_testing_accuracy(); //TODO: remove comment from this line and implement function
+            get_testing_accuracy();
         }
         else
             console.log("<store_validation_accuracy_on_server> Stored testing accuracy " + curr_net_accuracy);
