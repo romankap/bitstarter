@@ -17,7 +17,7 @@ var minimum_epochs_to_train=2;
 */
 
 var total_cifar10_training_samples = 45000;
-var samples_in_training_batch=500;
+var samples_in_training_batch=1000;
 var samples_in_validation_batch=5000;
 var samples_in_test_batch=10000;
 
