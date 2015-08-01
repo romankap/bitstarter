@@ -103,6 +103,8 @@ var validation_accuracies_array = new Array();
 
 var last_validation_accuracy=0, testing_accuracy=0;
 
+var acc_history = [];
+
 module.exports = {
   update_by_gradients: function(grads) {
       trainer.push_grads(JSON.parse(grads));
@@ -132,6 +134,10 @@ module.exports = {
         return epochs_count;
     },
 
+    store_acc: function(value) {
+      acc_history.push({ time: getTime(), epoch: epochs_count, batch: last_batch, accuracy: value });
+    },
+
 	// Stats-related
 	reset_stats: function() {
 		fw_timings.length=0; fw_timings_sum=0;
@@ -142,6 +148,7 @@ module.exports = {
 		validation_accuracies_array.length=0;
 
 		last_validation_accuracy=0; testing_accuracy=0;
+    acc_history = [];
 	},
 	get_fw_timings_average : function() {
 		if (fw_timings.length > 0)
@@ -189,7 +196,19 @@ module.exports = {
 		var lines_in_csv = Math.max(fw_timings.length, bw_timings.length,
 						latencies_to_server.length, latencies_from_server.length,
 						time_to_train_epochs_array.length, validation_accuracies_array.length);
+      //  store_acc.push({ time: getTime(), epoch: last_epoch_sent, batch: last_batch, accuracy: store_acc });
 
+    stats_in_csv += "time" + ",";
+		stats_in_csv += "epoch" + ",";
+		stats_in_csv += "accuracy" + "\n";
+
+    for (var i=0; i<acc_history.length; i++) {
+      stats_in_csv += acc_history[i].time + ", ";
+      stats_in_csv += acc_history[i].epoch + ", ";
+      stats_in_csv += acc_history[i].accuracy + "\n";
+    }
+
+/*
 		// Headlines
 		stats_in_csv += "fw_times" + ",";
 		stats_in_csv += "bw_times" + ",";
@@ -226,7 +245,7 @@ module.exports = {
 
 			stats_in_csv += "\n";
 		}
-
+*/
 		return stats_in_csv;
 	},
 
