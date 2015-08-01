@@ -1,32 +1,35 @@
+var UPDATE_INTERVAL_MS = 500;   // GUI text values updates
+
 var net, trainer;
+var old_net;
 
 var data_img_elt;
 var img_data;
 
-var UPDATE_INTERVAL_MS = 500;
-
 var client_name;
 
-var is_batch_loaded;
+var dataset_name;
+var model_id;
+var batch_loaded;
 var curr_batch_num;
 
-var model_id;
-
 var paused = true;
+var started_once = false;
 
-var old_net;
+var net_loaded_from_server = false;
+var batch_loaded = false;
+var training_active = false;
+var labels_loaded = false;
 
 var curr_sample_num;
-var is_net_loaded_from_server = false, is_training_active = false;
-var train_on_batch_interval;    // Interval identifier
-
 
 var fw_timings_sum, fw_timings_num;
 var bw_timings_sum, bw_timings_num;
 var latency_to_server, post_to_server_start, post_to_server_end;
 var latency_from_server, get_from_server_start, get_from_server_end;
 
-var dataset_name;
+var last_gui_update = 0;
+
 
 var make_string_ID = function ()
 {
@@ -50,7 +53,6 @@ var change_client_name = function() {
 }
 
 
-
 var gradients_calculator = {
     traverse: function (new_net_property, old_net_property, prev_property) {
         debug_global_counter = 0;
@@ -70,10 +72,10 @@ var gradients_calculator = {
     }
 }
 
-var reset_stats = function() {
+var reset_timing_stats = function() {
     fw_timings_sum = fw_timings_num = 0;
     bw_timings_sum = bw_timings_num = 0;
-    //post_to_server_start = post_to_server_end = -1;
+    post_to_server_start = post_to_server_end = -1;
     get_from_server_start = get_from_server_end = -1;
 }
 
@@ -101,7 +103,6 @@ function isNumeric(num) {
     return !isNaN(num)
 }
 
-// Returns a random number in the range: [0, max_num-1]
 var get_random_number = function (max_num) {
     return Math.floor((Math.random() * max_num));
 }
@@ -121,10 +122,9 @@ var update_displayed_batch_and_epoch_nums = function(new_batch_num, new_epoch_nu
     }
 }
 
-
 var load_data_batch = function(batch_url) {
     // Load the dataset with JS in background
-    if(is_batch_loaded) return;
+    if(batch_loaded) return;
 
     data_img_elt = new Image();
     data_img_elt.crossOrigin = 'anonymous';
@@ -136,7 +136,7 @@ var load_data_batch = function(batch_url) {
         var data_ctx = data_canvas.getContext("2d");
         data_ctx.drawImage(data_img_elt, 0, 0); // copy it over... bit wasteful :(
         img_data = data_ctx.getImageData(0, 0, data_img_elt.width, data_img_elt.height);
-        is_batch_loaded = true;
+        batch_loaded = true;
         console.log('Finished loading data batch #' + batch_url);
     }
 
@@ -146,298 +146,32 @@ var load_data_batch = function(batch_url) {
 var maxmin = cnnutil.maxmin;
 var f2t = cnnutil.f2t;
 
-// elt is the element to add all the canvas activation drawings into
-// A is the Vol() to use
-// scale is a multiplier to make the visualizations larger. Make higher for larger pictures
-// if grads is true then gradients are used instead
-var draw_activations = function(elt, A, scale, grads) {
-    var s = scale || 2; // scale
-    var draw_grads = false;
-    if(typeof(grads) !== 'undefined') draw_grads = grads;
-
-    // get max and min activation to scale the maps automatically
-    var w = draw_grads ? A.dw : A.w;
-    var mm = maxmin(w);
-
-    // create the canvas elements, draw and add to DOM
-    for(var d=0;d<A.depth;d++) {
-
-        var canv = document.createElement('canvas');
-        canv.className = 'actmap';
-        var W = A.sx * s;
-        var H = A.sy * s;
-        canv.width = W;
-        canv.height = H;
-        var ctx = canv.getContext('2d');
-        var g = ctx.createImageData(W, H);
-
-        for(var x=0;x<A.sx;x++) {
-            for(var y=0;y<A.sy;y++) {
-                if(draw_grads) {
-                    var dval = Math.floor((A.get_grad(x,y,d)-mm.minv)/mm.dv*255);
-                } else {
-                    var dval = Math.floor((A.get(x,y,d)-mm.minv)/mm.dv*255);
-                }
-                for(var dx=0;dx<s;dx++) {
-                    for(var dy=0;dy<s;dy++) {
-                        var pp = ((W * (y*s+dy)) + (dx + x*s)) * 4;
-                        for(var i=0;i<3;i++) { g.data[pp + i] = dval; } // rgb
-                        g.data[pp+3] = 255; // alpha channel
-                    }
-                }
-            }
-        }
-        ctx.putImageData(g, 0, 0);
-        elt.appendChild(canv);
-    }
-}
-
-var draw_activations_COLOR = function(elt, A, scale, grads) {
-
-    var s = scale || 2; // scale
-    var draw_grads = false;
-    if(typeof(grads) !== 'undefined') draw_grads = grads;
-
-    // get max and min activation to scale the maps automatically
-    var w = draw_grads ? A.dw : A.w;
-    var mm = maxmin(w);
-
-    var canv = document.createElement('canvas');
-    canv.className = 'actmap';
-    var W = A.sx * s;
-    var H = A.sy * s;
-    canv.width = W;
-    canv.height = H;
-    var ctx = canv.getContext('2d');
-    var g = ctx.createImageData(W, H);
-    for(var d=0;d<3;d++) {
-        for(var x=0;x<A.sx;x++) {
-            for(var y=0;y<A.sy;y++) {
-                if(draw_grads) {
-                    var dval = Math.floor((A.get_grad(x,y,d)-mm.minv)/mm.dv*255);
-                } else {
-                    var dval = Math.floor((A.get(x,y,d)-mm.minv)/mm.dv*255);
-                }
-                for(var dx=0;dx<s;dx++) {
-                    for(var dy=0;dy<s;dy++) {
-                        var pp = ((W * (y*s+dy)) + (dx + x*s)) * 4;
-                        g.data[pp + d] = dval;
-                        if(d===0) g.data[pp+3] = 255; // alpha channel
-                    }
-                }
-            }
-        }
-    }
-    ctx.putImageData(g, 0, 0);
-    elt.appendChild(canv);
-}
-
-var visualize_activations = function(net, elt) {
-
-    // clear the element
-    elt.innerHTML = "";
-
-    // show activations in each layer
-    var N = net.layers.length;
-    for(var i=0;i<N;i++) {
-        var L = net.layers[i];
-
-        var layer_div = document.createElement('div');
-
-        // visualize activations
-        var activations_div = document.createElement('div');
-        activations_div.appendChild(document.createTextNode('Activations:'));
-        activations_div.appendChild(document.createElement('br'));
-        activations_div.className = 'layer_act';
-        var scale = 2;
-        if(L.layer_type==='softmax' || L.layer_type==='fc') scale = 10; // for softmax
-
-        // HACK to draw in color in input layer
-        if(i===0) {
-            draw_activations_COLOR(activations_div, L.out_act, scale);
-            draw_activations_COLOR(activations_div, L.out_act, scale, true);
-
-            /*
-             // visualize positive and negative components of the gradient separately
-             var dd = L.out_act.clone();
-             var ni = L.out_act.w.length;
-             for(var q=0;q<ni;q++) { var dwq = L.out_act.dw[q]; dd.w[q] = dwq > 0 ? dwq : 0.0; }
-             draw_activations_COLOR(activations_div, dd, scale);
-             for(var q=0;q<ni;q++) { var dwq = L.out_act.dw[q]; dd.w[q] = dwq < 0 ? -dwq : 0.0; }
-             draw_activations_COLOR(activations_div, dd, scale);
-             */
-
-            /*
-             // visualize what the network would like the image to look like more
-             var dd = L.out_act.clone();
-             var ni = L.out_act.w.length;
-             for(var q=0;q<ni;q++) { var dwq = L.out_act.dw[q]; dd.w[q] -= 20*dwq; }
-             draw_activations_COLOR(activations_div, dd, scale);
-             */
-
-            /*
-             // visualize gradient magnitude
-             var dd = L.out_act.clone();
-             var ni = L.out_act.w.length;
-             for(var q=0;q<ni;q++) { var dwq = L.out_act.dw[q]; dd.w[q] = dwq*dwq; }
-             draw_activations_COLOR(activations_div, dd, scale);
-             */
-
-        } else {
-            draw_activations(activations_div, L.out_act, scale);
-        }
-
-        // visualize data gradients
-        if(L.layer_type !== 'softmax' && L.layer_type !== 'input' ) {
-            var grad_div = document.createElement('div');
-            grad_div.appendChild(document.createTextNode('Activation Gradients:'));
-            grad_div.appendChild(document.createElement('br'));
-            grad_div.className = 'layer_grad';
-            var scale = 2;
-            if(L.layer_type==='softmax' || L.layer_type==='fc') scale = 10; // for softmax
-            draw_activations(grad_div, L.out_act, scale, true);
-            activations_div.appendChild(grad_div);
-        }
-
-        // visualize filters if they are of reasonable size
-        if(L.layer_type === 'conv') {
-            var filters_div = document.createElement('div');
-            if(L.filters[0].sx>3) {
-                // actual weights
-                filters_div.appendChild(document.createTextNode('Weights:'));
-                filters_div.appendChild(document.createElement('br'));
-                for(var j=0;j<L.filters.length;j++) {
-                    // HACK to draw in color for first layer conv filters
-                    if(i===1) {
-                        draw_activations_COLOR(filters_div, L.filters[j], 2);
-                    } else {
-                        filters_div.appendChild(document.createTextNode('('));
-                        draw_activations(filters_div, L.filters[j], 2);
-                        filters_div.appendChild(document.createTextNode(')'));
-                    }
-                }
-                // gradients
-                filters_div.appendChild(document.createElement('br'));
-                filters_div.appendChild(document.createTextNode('Weight Gradients:'));
-                filters_div.appendChild(document.createElement('br'));
-                for(var j=0;j<L.filters.length;j++) {
-                    if(i===1) { draw_activations_COLOR(filters_div, L.filters[j], 2, true); }
-                    else {
-                        filters_div.appendChild(document.createTextNode('('));
-                        draw_activations(filters_div, L.filters[j], 2, true);
-                        filters_div.appendChild(document.createTextNode(')'));
-                    }
-                }
-            } else {
-                filters_div.appendChild(document.createTextNode('Weights hidden, too small'));
-            }
-            activations_div.appendChild(filters_div);
-        }
-        layer_div.appendChild(activations_div);
-
-        // print some stats on left of the layer
-        layer_div.className = 'layer ' + 'lt' + L.layer_type;
-        var title_div = document.createElement('div');
-        title_div.className = 'ltitle'
-        var t = L.layer_type + ' (' + L.out_sx + 'x' + L.out_sy + 'x' + L.out_depth + ')';
-        title_div.appendChild(document.createTextNode(t));
-        layer_div.appendChild(title_div);
-
-        if(L.layer_type==='conv') {
-            var t = 'filter size ' + L.filters[0].sx + 'x' + L.filters[0].sy + 'x' + L.filters[0].depth + ', stride ' + L.stride;
-            layer_div.appendChild(document.createTextNode(t));
-            layer_div.appendChild(document.createElement('br'));
-        }
-        if(L.layer_type==='pool') {
-            var t = 'pooling size ' + L.sx + 'x' + L.sy + ', stride ' + L.stride;
-            layer_div.appendChild(document.createTextNode(t));
-            layer_div.appendChild(document.createElement('br'));
-        }
-
-        // find min, max activations and display them
-        var mma = maxmin(L.out_act.w);
-        var t = 'max activation: ' + f2t(mma.maxv) + ', min: ' + f2t(mma.minv);
-        layer_div.appendChild(document.createTextNode(t));
-        layer_div.appendChild(document.createElement('br'));
-
-        var mma = maxmin(L.out_act.dw);
-        var t = 'max gradient: ' + f2t(mma.maxv) + ', min: ' + f2t(mma.minv);
-        layer_div.appendChild(document.createTextNode(t));
-        layer_div.appendChild(document.createElement('br'));
-
-        // number of parameters
-        if(L.layer_type==='conv' || L.layer_type==='local') {
-            var tot_params = L.sx*L.sy*L.in_depth*L.filters.length + L.filters.length;
-            var t = 'parameters: ' + L.filters.length + 'x' + L.sx + 'x' + L.sy + 'x' + L.in_depth + '+' + L.filters.length + ' = ' + tot_params;
-            layer_div.appendChild(document.createTextNode(t));
-            layer_div.appendChild(document.createElement('br'));
-        }
-        if(L.layer_type==='fc') {
-            var tot_params = L.num_inputs*L.filters.length + L.filters.length;
-            var t = 'parameters: ' + L.filters.length + 'x' + L.num_inputs + '+' + L.filters.length + ' = ' + tot_params;
-            layer_div.appendChild(document.createTextNode(t));
-            layer_div.appendChild(document.createElement('br'));
-        }
-
-        // css madness needed here...
-        var clear = document.createElement('div');
-        clear.className = 'clear';
-        layer_div.appendChild(clear);
-
-        elt.appendChild(layer_div);
-    }
-}
-
-var lossGraph = new cnnvis.Graph();
 var xLossWindow = new cnnutil.Window(100);
 var wLossWindow = new cnnutil.Window(100);
 var trainAccWindow = new cnnutil.Window(100);
 var valAccWindow = new cnnutil.Window(100);
 var testAccWindow = new cnnutil.Window(50, 1);
 
-var update_net_param_display = function() {
-  //  document.getElementById('lr_input').value = trainer.learning_rate;
-  //  document.getElementById('momentum_input').value = trainer.momentum;
-  //  document.getElementById('batch_size_input').value = trainer.batch_size;
-  //  document.getElementById('decay_input').value = trainer.l2_decay;
-}
-
-var clear_graph = function() {
-    lossGraph = new cnnvis.Graph(); // reinit graph too
-}
-
 var reset_all = function() {    // Just reset any visual cues of doing anything
-    is_net_loaded_from_server = false;
-    is_batch_loaded = false;
-    is_training_active = false;
+    net_loaded_from_server = false;
+    batch_loaded = false;
+    training_active = false;
     curr_sample_num = 0;
 
     // reinit windows that keep track of val/train accuracies
     xLossWindow.reset();
     wLossWindow.reset();
-  //  trainAccWindow.reset();
+    trainAccWindow.reset();
     valAccWindow.reset();
     testAccWindow.reset();
-    lossGraph = new cnnvis.Graph(); // reinit graph too
 }
 
 
-var start_client = function() {
-    $.get('/start_client', function(data) {
-        console.log("<start_client> Got net and parameters, starting to work on batch_num: " + data.batch_num);
-        curr_batch_num = data.batch_num;
-        load_data_batch(curr_batch_num);
-        update_displayed_batch_num(curr_batch_num);
-    });
-}
-
-var labels_loaded = true;
-
-var init_all = function() {
+var init_batch = function() {
     var parameters = {  client_ID: client_ID };
 
     $.get('/get_net_batch_all', parameters, function(data) {
-		curr_batch_num = data.batch_num;
+		    curr_batch_num = data.batch_num;
         curr_epoch_num = data.epoch_num;
         dataset_name = data.dataset_name;
 
@@ -448,38 +182,35 @@ var init_all = function() {
 		    update_displayed_batch_and_epoch_nums(curr_batch_num, curr_epoch_num, data.total_different_clients);
 
 
-        if(net != undefined) {
-          old_net = net;
-        }
         net = new convnetjs.Net();
         net.fromJSON(data.net);
+
         if(model_id != data.model_ID) {
           labels_loaded = false;
           $.getScript(data.dataset_name + '/labels.js', function() {
               labels_loaded = true;
           });
+          $("#data_name").text(data.dataset_name.toUpperCase());
         }
-        $("#data_name").text(data.dataset_name.toUpperCase());
-        trainer = new convnetjs.SGDTrainer(net, data.trainer_param);
 
         model_id  = data.model_ID;
 
-        is_net_loaded_from_server = true;
+        net_loaded_from_server = true;
 
         get_from_server_end = new Date().getTime();
         latency_from_server = get_from_server_end - get_from_server_start;
-		    reset_stats();
+		    reset_timing_stats();
 
 
 
-        console.log("<init_all> Received " + parameters.model_name + " net back. model_ID: " + data.model_ID);
+        console.log("<init_all> Received net back. model_ID: " + data.model_ID);
         console.log("<init_all> Working on batch: " + data.batch_num); //DEBUG
-        console.log("<init_all> Received " + data.net.length + " net in length back"); //DEBUG
+      //  console.log("<init_all> Received " + data.net.length + " net in length back"); //DEBUG
     });
 }
 
 var post_gradients_to_server = function() {
-  is_training_active = false;
+  training_active = false;
   post_to_server_start = new Date().getTime();
 
   var gradients = net;
@@ -492,10 +223,10 @@ var post_gradients_to_server = function() {
                       net: JSON.stringify(gradients),
                       model_ID: model_id,
                       client_ID: client_ID,
-					  fw_timings_average: get_fw_timings_average().toFixed(2),
-					  bw_timings_average: get_bw_timings_average().toFixed(2),
-					  latency_to_server: latency_to_server
-                  };
+          					  fw_timings_average: get_fw_timings_average().toFixed(2),
+          					  bw_timings_average: get_bw_timings_average().toFixed(2),
+          					  latency_to_server: latency_to_server
+                    };
 
   console.log("Sending net_in_JSON with length " + parameters.net.length);
 
@@ -507,33 +238,68 @@ var post_gradients_to_server = function() {
   });
 }
 
-var start_working = function() {
-    if (is_net_loaded_from_server && is_batch_loaded && labels_loaded) {
-        is_training_active = true;
+var training_setter = function() {
+    if (batch_loaded && labels_loaded) {
+        training_active = true;
         curr_sample_num = 0;
-        train_on_batch_interval = setTimeout(train_on_batch, 0);
+        setTimeout(train_on_batch, 0);
         console.log('Starting to work!');
     }
     else {
-        setTimeout(start_working, 200);
-          console.log('Waiting to start to working...');
+        setTimeout(training_setter, 100);
+        console.log('Waiting to start to working...');
     }
 }
 
+var launcher = function() {
+  if(net_loaded_from_server) {
+    setTimeout(training_setter, 0);
+  }
+  else {
+    init_batch();
+    setTimeout(training_setter, 0);
+  }
+}
+
+var post_gradients = function(grads) {
+  var parameters = {
+                        model_ID: model_id,
+                        client_ID: client_ID,
+            					  gradients: JSON.stringify(grads)
+                      };
+
+  console.log("Sending gradients");
+
+  $.post('/update_model_from_gradients_parts', parameters, function(data) {
+	//	console.log(data);
+	//	post_to_server_end = new Date().getTime();
+	//	latency_to_server = post_to_server_end - post_to_server_start;
+	//	console.log("<post_gradients_to_server> Sending latency_to_server: " + latency_to_server);
+  });
+}
+
 var train_on_batch = function() {
-    if (is_training_active) {
+    if (training_active) {
         var sample = sample_training_instance[dataset_name](curr_sample_num);
         step(sample, curr_sample_num); // process this image
         curr_sample_num++
-        setTimeout(train_on_batch, 0);
+
+        if(curr_sample_num != 1 && (  curr_sample_num-1) % 20 == 0) {
+            grads = trainer.accuredGrads;
+            post_gradients(grads);
+            trainer.accuredGrads = [];
+        }
         if(curr_sample_num == batch_size) {
-            post_gradients_to_server();
-            reset_all();
+            net_loaded_from_server = false;
+            batch_loaded = false;
+          //  post_gradients_to_server();
+          //  reset_all();
             if(!paused) {
-              init_all();
-              setTimeout(start_working, 0);
+              setTimeout(launcher, 0);
+              return;
             }
         }
+        setTimeout(train_on_batch, 0);
     }
 }
 
@@ -577,8 +343,6 @@ var sample_training_instance = {    // desperate times call for desperate measur
       }
 }
 
-
-var last_time = 0;
 var step = function(sample, sample_num) {
 
     var x = sample.x;
@@ -599,7 +363,7 @@ var step = function(sample, sample_num) {
 
     var time = new Date().getTime();
     // visualize training status
-    if( (time - last_time) > UPDATE_INTERVAL_MS) {
+    if( (time - last_gui_update) > UPDATE_INTERVAL_MS) {
 
       document.getElementById("fwdTime").innerHTML = 'Forward time per example: ' + stats.fwd_time + 'ms';
 
@@ -607,59 +371,35 @@ var step = function(sample, sample_num) {
 
       document.getElementById("clsLoss").innerHTML = 'Classification loss: ' + f2t(xLossWindow.get_average());
 
-      document.getElementById("exmp").innerHTML = 'L2 Weight decay loss: ' + f2t(wLossWindow.get_average());
+      document.getElementById("decayloss").innerHTML = 'L2 Weight decay loss: ' + f2t(wLossWindow.get_average());
 
-      last_time = time;
+      document.getElementById("accu").innerHTML = 'Training accuracy: ' + f2t(trainAccWindow.get_average());;
+
+      document.getElementById("exmpseen").innerHTML = 'Examples seen (out of '+ batch_size + "): " + sample_num;
+
+      last_gui_update = time;
     }
 
-/*    var t = 'Training accuracy: ' + f2t(trainAccWindow.get_average());
-    train_elt.appendChild(document.createTextNode(t));
-    train_elt.appendChild(document.createElement('br'));
-    var t = 'Validation accuracy: ' + f2t(valAccWindow.get_average());
-    train_elt.appendChild(document.createTextNode(t));
-    train_elt.appendChild(document.createElement('br'));
-    var t = 'Examples seen (out of '+ batch_size + "): " + sample_num;
-    train_elt.appendChild(document.createTextNode(t));
-    train_elt.appendChild(document.createElement('br'));*/
-
-    // visualize activations
-/*    if(sample_num % 100 === 0) {
-        var vis_elt = document.getElementById("visnet");
-        visualize_activations(net, vis_elt);
-    }
-
-    // log progress to graph, (full loss)
-    if(sample_num % 200 === 0) {
-        var xa = xLossWindow.get_average();
-        var xw = wLossWindow.get_average();
-        if(xa >= 0 && xw >= 0) { // if they are -1 it means not enough data was accumulated yet for estimates
-            lossGraph.add(step_num, xa + xw);
-            lossGraph.drawSelf(document.getElementById("lossgraph"));
-        }
-    }*/
 }
-var realPause = false;
+
 var compute = function() {
     paused = !paused;
 
     var btn = document.getElementById('compute-btn');
     if (paused) {
         $("#compute-btn").text('Train');
-        clearInterval(train_on_batch_interval);
-
-            is_training_active = false;
+        training_active = false;
       //  post_gradients_to_server();
     }
     else {
-        if(realPause == true) {
-            is_training_active = true;
-            train_on_batch_interval = setTimeout(train_on_batch, 0);
+    /*    if(started_once) {
+            $("#compute-btn").text('Pause');
+            start_working();
             return;
         }
+        started_once = true;*/
         $("#compute-btn").text('Pause');
-        init_all();
-        start_working();
-        realPause=true;
+        launcher();
     }
 }
 // int main

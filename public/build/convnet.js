@@ -6,9 +6,9 @@ var convnetjs = convnetjs || { REVISION: 'ALPHA' };
   var return_v = false;
   var v_val = 0.0;
   var gaussRandom = function() {
-    if(return_v) { 
+    if(return_v) {
       return_v = false;
-      return v_val; 
+      return v_val;
     }
     var u = 2*Math.random()-1;
     var v = 2*Math.random()-1;
@@ -62,8 +62,8 @@ var convnetjs = convnetjs || { REVISION: 'ALPHA' };
     var mini = 0;
     var n = w.length;
     for(var i=1;i<n;i++) {
-      if(w[i] > maxv) { maxv = w[i]; maxi = i; } 
-      if(w[i] < minv) { minv = w[i]; mini = i; } 
+      if(w[i] > maxv) { maxv = w[i]; maxi = i; }
+      if(w[i] < minv) { minv = w[i]; mini = i; }
     }
     return {maxi: maxi, maxv: maxv, mini: mini, minv: minv, dv:maxv-minv};
   }
@@ -134,7 +134,9 @@ var convnetjs = convnetjs || { REVISION: 'ALPHA' };
   global.arrContains = arrContains;
   global.getopt = getopt;
   global.assert = assert;
-  
+
+
+
 })(convnetjs);
 (function(global) {
   "use strict";
@@ -143,7 +145,7 @@ var convnetjs = convnetjs || { REVISION: 'ALPHA' };
   // it is essentially just a 3D volume of numbers, with a
   // width (sx), height (sy), and depth (depth).
   // it is used to hold data for all filters, all volumes,
-  // all weights, and also stores all gradients w.r.t. 
+  // all weights, and also stores all gradients w.r.t.
   // the data. c is optionally a value to initialize the volume
   // with. If c is missing, fills the Vol with random numbers.
   var Vol = function(sx, sy, depth, c) {
@@ -173,11 +175,11 @@ var convnetjs = convnetjs || { REVISION: 'ALPHA' };
         // variance of every neuron, otherwise neurons with a lot
         // of incoming connections have outputs of larger variance
         var scale = Math.sqrt(1.0/(sx*sy*depth));
-        for(var i=0;i<n;i++) { 
+        for(var i=0;i<n;i++) {
           this.w[i] = global.randn(0.0, scale);
         }
       } else {
-        for(var i=0;i<n;i++) { 
+        for(var i=0;i<n;i++) {
           this.w[i] = c;
         }
       }
@@ -185,29 +187,29 @@ var convnetjs = convnetjs || { REVISION: 'ALPHA' };
   }
 
   Vol.prototype = {
-    get: function(x, y, d) { 
+    get: function(x, y, d) {
       var ix=((this.sx * y)+x)*this.depth+d;
       return this.w[ix];
     },
-    set: function(x, y, d, v) { 
+    set: function(x, y, d, v) {
       var ix=((this.sx * y)+x)*this.depth+d;
-      this.w[ix] = v; 
+      this.w[ix] = v;
     },
-    add: function(x, y, d, v) { 
+    add: function(x, y, d, v) {
       var ix=((this.sx * y)+x)*this.depth+d;
-      this.w[ix] += v; 
+      this.w[ix] += v;
     },
-    get_grad: function(x, y, d) { 
+    get_grad: function(x, y, d) {
       var ix = ((this.sx * y)+x)*this.depth+d;
-      return this.dw[ix]; 
+      return this.dw[ix];
     },
-    set_grad: function(x, y, d, v) { 
+    set_grad: function(x, y, d, v) {
       var ix = ((this.sx * y)+x)*this.depth+d;
-      this.dw[ix] = v; 
+      this.dw[ix] = v;
     },
-    add_grad: function(x, y, d, v) { 
+    add_grad: function(x, y, d, v) {
       var ix = ((this.sx * y)+x)*this.depth+d;
-      this.dw[ix] += v; 
+      this.dw[ix] += v;
     },
     cloneAndZero: function() { return new Vol(this.sx, this.sy, this.depth, 0.0)},
     clone: function() {
@@ -223,7 +225,7 @@ var convnetjs = convnetjs || { REVISION: 'ALPHA' };
     toJSON: function() {
       // todo: we may want to only save d most significant digits to save space
       var json = {}
-      json.sx = this.sx; 
+      json.sx = this.sx;
       json.sy = this.sy;
       json.depth = this.depth;
       json.w = this.w;
@@ -261,7 +263,7 @@ var convnetjs = convnetjs || { REVISION: 'ALPHA' };
     if(typeof(fliplr)==='undefined') var fliplr = false;
     if(typeof(dx)==='undefined') var dx = global.randi(0, V.sx - crop);
     if(typeof(dy)==='undefined') var dy = global.randi(0, V.sy - crop);
-    
+
     // randomly sample a crop in the input volume
     var W;
     if(crop !== V.sx || dx!==0 || dy!==0) {
@@ -350,7 +352,7 @@ var convnetjs = convnetjs || { REVISION: 'ALPHA' };
 
     return x;
   }
-  
+
   global.augment = augment;
   global.img_to_vol = img_to_vol;
 
@@ -361,8 +363,8 @@ var convnetjs = convnetjs || { REVISION: 'ALPHA' };
 
   // This file contains all layers that do dot products with input,
   // but usually in a different connectivity pattern and weight sharing
-  // schemes: 
-  // - FullyConn is fully connected dot products 
+  // schemes:
+  // - FullyConn is fully connected dot products
   // - ConvLayer does convolutions (so weight sharing spatially)
   // putting them together in one file because they are very similar
   var ConvLayer = function(opt) {
@@ -374,7 +376,7 @@ var convnetjs = convnetjs || { REVISION: 'ALPHA' };
     this.in_depth = opt.in_depth;
     this.in_sx = opt.in_sx;
     this.in_sy = opt.in_sy;
-    
+
     // optional
     this.sy = typeof opt.sy !== 'undefined' ? opt.sy : this.sx;
     this.stride = typeof opt.stride !== 'undefined' ? opt.stride : 1; // stride at which we apply filters to input volume
@@ -402,7 +404,7 @@ var convnetjs = convnetjs || { REVISION: 'ALPHA' };
 
       this.in_act = V;
       var A = new Vol(this.out_sx |0, this.out_sy |0, this.out_depth |0, 0.0);
-      
+
       var V_sx = V.sx |0;
       var V_sy = V.sy |0;
       var xy_stride = this.stride |0;
@@ -534,7 +536,7 @@ var convnetjs = convnetjs || { REVISION: 'ALPHA' };
     // ok fine we will allow 'filters' as the word as well
     this.out_depth = typeof opt.num_neurons !== 'undefined' ? opt.num_neurons : opt.filters;
 
-    // optional 
+    // optional
     this.l1_decay_mul = typeof opt.l1_decay_mul !== 'undefined' ? opt.l1_decay_mul : 0.0;
     this.l2_decay_mul = typeof opt.l2_decay_mul !== 'undefined' ? opt.l2_decay_mul : 1.0;
 
@@ -571,7 +573,7 @@ var convnetjs = convnetjs || { REVISION: 'ALPHA' };
     backward: function() {
       var V = this.in_act;
       V.dw = global.zeros(V.w.length); // zero out the gradient in input Vol
-      
+
       // compute gradient wrt weights and data
       for(var i=0;i<this.out_depth;i++) {
         var tfi = this.filters[i];
@@ -628,12 +630,12 @@ var convnetjs = convnetjs || { REVISION: 'ALPHA' };
 
   global.ConvLayer = ConvLayer;
   global.FullyConnLayer = FullyConnLayer;
-  
+
 })(convnetjs);
 (function(global) {
   "use strict";
   var Vol = global.Vol; // convenience
-  
+
   var PoolLayer = function(opt) {
 
     var opt = opt || {};
@@ -664,7 +666,7 @@ var convnetjs = convnetjs || { REVISION: 'ALPHA' };
       this.in_act = V;
 
       var A = new Vol(this.out_sx, this.out_sy, this.out_depth, 0.0);
-      
+
       var n=0; // a counter for switches
       for(var d=0;d<this.out_depth;d++) {
         var x = -this.pad;
@@ -683,7 +685,7 @@ var convnetjs = convnetjs || { REVISION: 'ALPHA' };
                 if(oy>=0 && oy<V.sy && ox>=0 && ox<V.sx) {
                   var v = V.get(ox, oy, d);
                   // perform max pooling and store pointers to where
-                  // the max came from. This will speed up backprop 
+                  // the max came from. This will speed up backprop
                   // and can help make nice visualizations in future
                   if(v > a) { a = v; winx=ox; winy=oy;}
                 }
@@ -699,12 +701,12 @@ var convnetjs = convnetjs || { REVISION: 'ALPHA' };
       this.out_act = A;
       return this.out_act;
     },
-    backward: function() { 
-      // pooling layers have no parameters, so simply compute 
+    backward: function() {
+      // pooling layers have no parameters, so simply compute
       // gradient wrt data here
       var V = this.in_act;
       V.dw = global.zeros(V.w.length); // zero out gradient wrt data
-      var A = this.out_act; // computed in forward pass 
+      var A = this.out_act; // computed in forward pass
 
       var n = 0;
       for(var d=0;d<this.out_depth;d++) {
@@ -771,7 +773,7 @@ var convnetjs = convnetjs || { REVISION: 'ALPHA' };
     // optional: default these dimensions to 1
     this.out_sx = getopt(opt, ['out_sx', 'sx', 'width'], 1);
     this.out_sy = getopt(opt, ['out_sy', 'sy', 'height'], 1);
-    
+
     // computed
     this.layer_type = 'input';
   }
@@ -797,7 +799,7 @@ var convnetjs = convnetjs || { REVISION: 'ALPHA' };
       this.out_depth = json.out_depth;
       this.out_sx = json.out_sx;
       this.out_sy = json.out_sy;
-      this.layer_type = json.layer_type; 
+      this.layer_type = json.layer_type;
     }
   }
 
@@ -806,9 +808,9 @@ var convnetjs = convnetjs || { REVISION: 'ALPHA' };
 (function(global) {
   "use strict";
   var Vol = global.Vol; // convenience
-  
-  // Layers that implement a loss. Currently these are the layers that 
-  // can initiate a backward() pass. In future we probably want a more 
+
+  // Layers that implement a loss. Currently these are the layers that
+  // can initiate a backward() pass. In future we probably want a more
   // flexible system that can accomodate multiple losses to do multi-task
   // learning, and stuff like that. But for now, one of the layers in this
   // file must be the final layer in a Net.
@@ -874,7 +876,7 @@ var convnetjs = convnetjs || { REVISION: 'ALPHA' };
       // loss is the class negative log likelihood
       return -Math.log(this.es[y]);
     },
-    getParamsAndGrads: function() { 
+    getParamsAndGrads: function() {
       return [];
     },
     toJSON: function() {
@@ -917,9 +919,9 @@ var convnetjs = convnetjs || { REVISION: 'ALPHA' };
     },
     // y is a list here of size num_inputs
     // or it can be a number if only one value is regressed
-    // or it can be a struct {dim: i, val: x} where we only want to 
+    // or it can be a struct {dim: i, val: x} where we only want to
     // regress on dimension i and asking it to have value x
-    backward: function(y) { 
+    backward: function(y) {
 
       // compute and accumulate gradient wrt weights and bias of this layer
       var x = this.in_act;
@@ -947,7 +949,7 @@ var convnetjs = convnetjs || { REVISION: 'ALPHA' };
       }
       return loss;
     },
-    getParamsAndGrads: function() { 
+    getParamsAndGrads: function() {
       return [];
     },
     toJSON: function() {
@@ -992,7 +994,7 @@ var convnetjs = convnetjs || { REVISION: 'ALPHA' };
       x.dw = global.zeros(x.w.length); // zero out the gradient of input Vol
 
       // we're using structured loss here, which means that the score
-      // of the ground truth should be higher than the score of any other 
+      // of the ground truth should be higher than the score of any other
       // class, by a margin
       var yscore = x.w[y]; // score of ground truth
       var margin = 1.0;
@@ -1010,7 +1012,7 @@ var convnetjs = convnetjs || { REVISION: 'ALPHA' };
 
       return loss;
     },
-    getParamsAndGrads: function() { 
+    getParamsAndGrads: function() {
       return [];
     },
     toJSON: function() {
@@ -1030,7 +1032,7 @@ var convnetjs = convnetjs || { REVISION: 'ALPHA' };
       this.num_inputs = json.num_inputs;
     }
   }
-  
+
   global.RegressionLayer = RegressionLayer;
   global.SoftmaxLayer = SoftmaxLayer;
   global.SVMLayer = SVMLayer;
@@ -1040,7 +1042,7 @@ var convnetjs = convnetjs || { REVISION: 'ALPHA' };
 (function(global) {
   "use strict";
   var Vol = global.Vol; // convenience
-  
+
   // Implements ReLU nonlinearity elementwise
   // x -> max(0, x)
   // the output is in [0, inf)
@@ -1059,7 +1061,7 @@ var convnetjs = convnetjs || { REVISION: 'ALPHA' };
       var V2 = V.clone();
       var N = V.w.length;
       var V2w = V2.w;
-      for(var i=0;i<N;i++) { 
+      for(var i=0;i<N;i++) {
         if(V2w[i] < 0) V2w[i] = 0; // threshold at 0
       }
       this.out_act = V2;
@@ -1090,7 +1092,7 @@ var convnetjs = convnetjs || { REVISION: 'ALPHA' };
       this.out_depth = json.out_depth;
       this.out_sx = json.out_sx;
       this.out_sy = json.out_sy;
-      this.layer_type = json.layer_type; 
+      this.layer_type = json.layer_type;
     }
   }
 
@@ -1113,7 +1115,7 @@ var convnetjs = convnetjs || { REVISION: 'ALPHA' };
       var N = V.w.length;
       var V2w = V2.w;
       var Vw = V.w;
-      for(var i=0;i<N;i++) { 
+      for(var i=0;i<N;i++) {
         V2w[i] = 1.0/(1.0+Math.exp(-Vw[i]));
       }
       this.out_act = V2;
@@ -1144,7 +1146,7 @@ var convnetjs = convnetjs || { REVISION: 'ALPHA' };
       this.out_depth = json.out_depth;
       this.out_sx = json.out_sx;
       this.out_sy = json.out_sy;
-      this.layer_type = json.layer_type; 
+      this.layer_type = json.layer_type;
     }
   }
 
@@ -1169,7 +1171,7 @@ var convnetjs = convnetjs || { REVISION: 'ALPHA' };
   MaxoutLayer.prototype = {
     forward: function(V, is_training) {
       this.in_act = V;
-      var N = this.out_depth; 
+      var N = this.out_depth;
       var V2 = new Vol(this.out_sx, this.out_sy, this.out_depth, 0.0);
 
       // optimization branch. If we're operating on 1D arrays we dont have
@@ -1258,7 +1260,7 @@ var convnetjs = convnetjs || { REVISION: 'ALPHA' };
       this.out_depth = json.out_depth;
       this.out_sx = json.out_sx;
       this.out_sy = json.out_sy;
-      this.layer_type = json.layer_type; 
+      this.layer_type = json.layer_type;
       this.group_size = json.group_size;
       this.switches = global.zeros(this.group_size);
     }
@@ -1270,7 +1272,7 @@ var convnetjs = convnetjs || { REVISION: 'ALPHA' };
     return (y - 1) / (y + 1);
   }
   // Implements Tanh nnonlinearity elementwise
-  // x -> tanh(x) 
+  // x -> tanh(x)
   // so the output is between -1 and 1.
   var TanhLayer = function(opt) {
     var opt = opt || {};
@@ -1286,7 +1288,7 @@ var convnetjs = convnetjs || { REVISION: 'ALPHA' };
       this.in_act = V;
       var V2 = V.cloneAndZero();
       var N = V.w.length;
-      for(var i=0;i<N;i++) { 
+      for(var i=0;i<N;i++) {
         V2.w[i] = tanh(V.w[i]);
       }
       this.out_act = V2;
@@ -1317,10 +1319,10 @@ var convnetjs = convnetjs || { REVISION: 'ALPHA' };
       this.out_depth = json.out_depth;
       this.out_sx = json.out_sx;
       this.out_sy = json.out_sy;
-      this.layer_type = json.layer_type; 
+      this.layer_type = json.layer_type;
     }
   }
-  
+
   global.TanhLayer = TanhLayer;
   global.MaxoutLayer = MaxoutLayer;
   global.ReluLayer = ReluLayer;
@@ -1374,7 +1376,7 @@ var convnetjs = convnetjs || { REVISION: 'ALPHA' };
       var N = V.w.length;
       V.dw = global.zeros(N); // zero out gradient wrt data
       for(var i=0;i<N;i++) {
-        if(!(this.dropped[i])) { 
+        if(!(this.dropped[i])) {
           V.dw[i] = chain_grad.dw[i]; // copy over the gradient
         }
       }
@@ -1395,18 +1397,18 @@ var convnetjs = convnetjs || { REVISION: 'ALPHA' };
       this.out_depth = json.out_depth;
       this.out_sx = json.out_sx;
       this.out_sy = json.out_sy;
-      this.layer_type = json.layer_type; 
+      this.layer_type = json.layer_type;
       this.drop_prob = json.drop_prob;
     }
   }
-  
+
 
   global.DropoutLayer = DropoutLayer;
 })(convnetjs);
 (function(global) {
   "use strict";
   var Vol = global.Vol; // convenience
-  
+
   // a bit experimental layer for now. I think it works but I'm not 100%
   // the gradient check is a bit funky. I'll look into this a bit later.
   // Local Response Normalization in window, along depths of volumes
@@ -1459,11 +1461,11 @@ var convnetjs = convnetjs || { REVISION: 'ALPHA' };
       this.out_act = A;
       return this.out_act; // dummy identity function for now
     },
-    backward: function() { 
+    backward: function() {
       // evaluate gradient wrt data
       var V = this.in_act; // we need to set dw of this
       V.dw = global.zeros(V.w.length); // zero out gradient wrt data
-      var A = this.out_act; // computed in forward pass 
+      var A = this.out_act; // computed in forward pass
 
       var n2 = Math.floor(this.n/2);
       for(var x=0;x<V.sx;x++) {
@@ -1476,8 +1478,8 @@ var convnetjs = convnetjs || { REVISION: 'ALPHA' };
             var SB2 = SB*SB;
 
             // normalize in a window of size n
-            for(var j=Math.max(0,i-n2);j<=Math.min(i+n2,V.depth-1);j++) {              
-              var aj = V.get(x,y,j); 
+            for(var j=Math.max(0,i-n2);j<=Math.min(i+n2,V.depth-1);j++) {
+              var aj = V.get(x,y,j);
               var g = -aj*this.beta*Math.pow(S,this.beta-1)*this.alpha/this.n*2*aj;
               if(j===i) g+= SB;
               g /= SB2;
@@ -1496,7 +1498,7 @@ var convnetjs = convnetjs || { REVISION: 'ALPHA' };
       json.n = this.n;
       json.alpha = this.alpha; // normalize by size
       json.beta = this.beta;
-      json.out_sx = this.out_sx; 
+      json.out_sx = this.out_sx;
       json.out_sy = this.out_sy;
       json.out_depth = this.out_depth;
       json.layer_type = this.layer_type;
@@ -1507,13 +1509,13 @@ var convnetjs = convnetjs || { REVISION: 'ALPHA' };
       this.n = json.n;
       this.alpha = json.alpha; // normalize by size
       this.beta = json.beta;
-      this.out_sx = json.out_sx; 
+      this.out_sx = json.out_sx;
       this.out_sy = json.out_sy;
       this.out_depth = json.out_depth;
       this.layer_type = json.layer_type;
     }
   }
-  
+
 
   global.LocalResponseNormalizationLayer = LocalResponseNormalizationLayer;
 })(convnetjs);
@@ -1529,7 +1531,7 @@ var convnetjs = convnetjs || { REVISION: 'ALPHA' };
   }
 
   Net.prototype = {
-    
+
     // takes a list of layer definitions and creates the network layer objects
     makeLayers: function(defs) {
 
@@ -1542,7 +1544,7 @@ var convnetjs = convnetjs || { REVISION: 'ALPHA' };
         var new_defs = [];
         for(var i=0;i<defs.length;i++) {
           var def = defs[i];
-          
+
           if(def.type==='softmax' || def.type==='svm') {
             // add an fc layer here, there is no reason the user should
             // have to worry about this and we almost always want to
@@ -1555,7 +1557,7 @@ var convnetjs = convnetjs || { REVISION: 'ALPHA' };
             new_defs.push({type:'fc', num_neurons: def.num_neurons});
           }
 
-          if((def.type==='fc' || def.type==='conv') 
+          if((def.type==='fc' || def.type==='conv')
               && typeof(def.bias_pref) === 'undefined'){
             def.bias_pref = 0.0;
             if(typeof def.activation !== 'undefined' && def.activation === 'relu') {
@@ -1617,7 +1619,7 @@ var convnetjs = convnetjs || { REVISION: 'ALPHA' };
       }
     },
 
-    // forward prop the network. 
+    // forward prop the network.
     // The trainer class passes is_training = true, but when this function is
     // called from outside (not from the trainer), it defaults to prediction mode
     forward: function(V, is_training) {
@@ -1635,7 +1637,7 @@ var convnetjs = convnetjs || { REVISION: 'ALPHA' };
       var loss = this.layers[N-1].backward(y);
       return loss;
     },
-    
+
     // backprop: compute gradients wrt all parameters
     backward: function(y) {
       var N = this.layers.length;
@@ -1702,7 +1704,7 @@ var convnetjs = convnetjs || { REVISION: 'ALPHA' };
       }
     }
   }
-  
+
   global.Net = Net;
 })(convnetjs);
 (function(global) {
@@ -1727,6 +1729,8 @@ var convnetjs = convnetjs || { REVISION: 'ALPHA' };
     this.k = 0; // iteration counter
     this.gsum = []; // last iteration gradients (used for momentum calculations)
     this.xsum = []; // used in adadelta
+
+    this.accuredGrads = [];
   }
 
   Trainer.prototype = {
@@ -1743,7 +1747,7 @@ var convnetjs = convnetjs || { REVISION: 'ALPHA' };
       var l1_decay_loss = 0.0;
       var end = new Date().getTime();
       var bwd_time = end - start;
-      
+
       this.k++;
       if(this.k % this.batch_size === 0) {
 
@@ -1767,6 +1771,10 @@ var convnetjs = convnetjs || { REVISION: 'ALPHA' };
 
         // perform an update for all sets of weights
         for(var i=0;i<pglist.length;i++) {
+          if (this.accuredGrads[i] == undefined) {
+            this.accuredGrads.push([]);
+          }
+
           var pg = pglist[i]; // param, gradient, other options in future (custom learning rate etc)
           var p = pg.params;
           var g = pg.grads;
@@ -1778,7 +1786,12 @@ var convnetjs = convnetjs || { REVISION: 'ALPHA' };
           var l1_decay = this.l1_decay * l1_decay_mul;
 
           var plen = p.length;
+
           for(var j=0;j<plen;j++) {
+            if (this.accuredGrads[i][j] == undefined) {
+              this.accuredGrads[i].push(0);
+            }
+
             l2_decay_loss += l2_decay*p[j]*p[j]/2; // accumulate weight decay loss
             l1_decay_loss += l1_decay*Math.abs(p[j]);
             var l1grad = l1_decay * (p[j] > 0 ? 1 : -1);
@@ -1786,16 +1799,18 @@ var convnetjs = convnetjs || { REVISION: 'ALPHA' };
 
             var gij = (l2grad + l1grad + g[j]) / this.batch_size; // raw batch gradient
 
+
             var gsumi = this.gsum[i];
             var xsumi = this.xsum[i];
             if(this.method === 'adagrad') {
               // adagrad update
               gsumi[j] = gsumi[j] + gij * gij;
+              this.accuredGrads[i][j] += gij;           // Downpour adagrad
               var dx = - this.learning_rate / Math.sqrt(gsumi[j] + this.eps) * gij;
               p[j] += dx;
             } else if(this.method === 'windowgrad') {
               // this is adagrad but with a moving window weighted average
-              // so the gradient is not accumulated over the entire history of the run. 
+              // so the gradient is not accumulated over the entire history of the run.
               // it's also referred to as Idea #1 in Zeiler paper on Adadelta. Seems reasonable to me!
               gsumi[j] = this.ro * gsumi[j] + (1-this.ro) * gij * gij;
               var dx = - this.learning_rate / Math.sqrt(gsumi[j] + this.eps) * gij; // eps added for better conditioning
@@ -1829,16 +1844,16 @@ var convnetjs = convnetjs || { REVISION: 'ALPHA' };
       }
 
       // appending softmax_loss for backwards compatibility, but from now on we will always use cost_loss
-      // in future, TODO: have to completely redo the way loss is done around the network as currently 
+      // in future, TODO: have to completely redo the way loss is done around the network as currently
       // loss is a bit of a hack. Ideally, user should specify arbitrary number of loss functions on any layer
-      // and it should all be computed correctly and automatically. 
-      return {fwd_time: fwd_time, bwd_time: bwd_time, 
+      // and it should all be computed correctly and automatically.
+      return {fwd_time: fwd_time, bwd_time: bwd_time,
               l2_decay_loss: l2_decay_loss, l1_decay_loss: l1_decay_loss,
-              cost_loss: cost_loss, softmax_loss: cost_loss, 
+              cost_loss: cost_loss, softmax_loss: cost_loss,
               loss: cost_loss + l1_decay_loss + l2_decay_loss}
     }
   }
-  
+
   global.Trainer = Trainer;
   global.SGDTrainer = Trainer; // backwards compatibility
 })(convnetjs);
@@ -1880,7 +1895,7 @@ var convnetjs = convnetjs || { REVISION: 'ALPHA' };
     this.num_candidates = getopt(opt, 'num_candidates', 50); // we evaluate several in parallel
     // how many epochs of data to train every network? for every fold?
     // higher values mean higher accuracy in final results, but more expensive
-    this.num_epochs = getopt(opt, 'num_epochs', 50); 
+    this.num_epochs = getopt(opt, 'num_epochs', 50);
     // number of best models to average during prediction. Usually higher = better
     this.ensemble_size = getopt(opt, 'ensemble_size', 10);
 
@@ -1965,7 +1980,7 @@ var convnetjs = convnetjs || { REVISION: 'ALPHA' };
       } else {
         trainer_def = {method:'sgd', learning_rate: lr, momentum: mom, batch_size:bs, l2_decay:l2};
       }
-      
+
       var trainer = new Trainer(net, trainer_def);
 
       var cand = {};
@@ -1988,7 +2003,7 @@ var convnetjs = convnetjs || { REVISION: 'ALPHA' };
     },
 
     step: function() {
-      
+
       // run an example through current candidate
       this.iter++;
 
@@ -2026,13 +2041,13 @@ var convnetjs = convnetjs || { REVISION: 'ALPHA' };
             this.evaluated_candidates.push(this.candidates[k]);
           }
           // sort evaluated candidates according to accuracy achieved
-          this.evaluated_candidates.sort(function(a, b) { 
-            return (a.accv / a.acc.length) 
-                 > (b.accv / b.acc.length) 
+          this.evaluated_candidates.sort(function(a, b) {
+            return (a.accv / a.acc.length)
+                 > (b.accv / b.acc.length)
                  ? -1 : 1;
           });
           // and clip only to the top few ones (lets place limit at 3*ensemble_size)
-          // otherwise there are concerns with keeping these all in memory 
+          // otherwise there are concerns with keeping these all in memory
           // if MagicNet is being evaluated for a very long time
           if(this.evaluated_candidates.length > 3 * this.ensemble_size) {
             this.evaluated_candidates = this.evaluated_candidates.slice(0, 3 * this.ensemble_size);
@@ -2102,9 +2117,9 @@ var convnetjs = convnetjs || { REVISION: 'ALPHA' };
       for(var j=0;j<nv;j++) {
         var net = eval_candidates[j].net;
         var x = net.forward(data);
-        if(j===0) { 
-          xout = x; 
-          n = x.w.length; 
+        if(j===0) {
+          xout = x;
+          n = x.w.length;
         } else {
           // add it on
           for(var d=0;d<n;d++) {
@@ -2123,7 +2138,7 @@ var convnetjs = convnetjs || { REVISION: 'ALPHA' };
       var xout = this.predict_soft(data);
       if(xout.w.length !== 0) {
         var stats = maxmin(xout.w);
-        var predicted_label = stats.maxi; 
+        var predicted_label = stats.maxi;
       } else {
         var predicted_label = -1; // error out
       }
@@ -2159,7 +2174,7 @@ var convnetjs = convnetjs || { REVISION: 'ALPHA' };
     onFinishFold: function(f) { this.finish_fold_callback = f; },
     // called when a batch of candidates has finished evaluating
     onFinishBatch: function(f) { this.finish_batch_callback = f; }
-    
+
   };
 
   global.MagicNet = MagicNet;

@@ -2,7 +2,7 @@ module.exports = {
 	name: "mnist",
 
 	train_size: 500,
-	train_batch_size: 50000,
+	train_batches: 50000 / 500,
 	validation_size: 10000,
 	test_size: 10000,
 
@@ -21,11 +21,9 @@ module.exports = {
 	\n\
 	trainer = new convnetjs.SGDTrainer(net, {method:'adadelta', batch_size:2, l2_decay:0.001});",
 
-	gen_batch_url: function(batch, batch_size) {
-		return "http://tx.technion.ac.il/~sromanka/mnist/" + batch_size + "/mnist_batch_" + batch + ".png";
+	gen_batch_url: function(batch) {
+		return "http://tx.technion.ac.il/~sromanka/mnist/500/mnist_batch_" + batch + ".png";
 	},
 
-	admin_url: function(batch, batch_size) {
-		return "http://tx.technion.ac.il/~sromanka/mnist/500/mnist_admin.png"
-	},
+	admin_url: "http://tx.technion.ac.il/~sromanka/mnist/500/mnist_admin.png"
 };

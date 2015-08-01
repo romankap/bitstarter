@@ -6,7 +6,7 @@ var http = require('http');
 var fs = require('fs');
 var config = require('./config');
 
-var DEFAULT_DATASET = "mnist";
+var DEFAULT_DATASET = "cifar10";
 
 // Init. default net
 var net_manager = require('./app/net_manager');
@@ -60,19 +60,13 @@ app.get('/get_node_name', function(request, response) {		// Unused
 });
 
 
-app.get('/get_admin_batch', function(request, response) {
+app.get('/get_admin_batch', function(request, response) {		// Unused
   response.send(net_manager.gen_admin_batch_url())
 });
 
 //==========================================
 //=  Store and load models to / from server
 //==========================================
-
-app.get('/magic_change_batch_size',  function(request, response) {
-  net_manager.set_batch_size(request.query.val);
-  net_manager.reset_model();
-  response.send("You hacked us! Restarting model");
-});
 
 app.get('/get_base_model_from_server', function(request, response) {
     response.send(net_manager.get_base_model_data());
@@ -87,7 +81,7 @@ app.get('/get_base_model_from_server', function(request, response) {
 
 app.get('/get_net_batch_all', function(request, response) {   //
     var model_parameters = net_manager.get_model_parameters();
-	var epoch_to_send = net_manager.get_epochs_count();
+	  var epoch_to_send = net_manager.get_epochs_count();
     var batch_num = net_manager.request_batch_num(request.query.client_ID);
     var parameters = {
                         net: net_manager.get_net().toJSON(),
@@ -177,6 +171,22 @@ app.post('/update_model_from_gradients', function(request, response) {
     }
 });
 
+
+app.post('/update_model_from_gradients_parts', function(request, response) {
+    var model_ID_from_client = request.body.model_ID;
+
+    if (model_ID_from_client == net_manager.get_model_ID()) {
+
+        console.log("<store_weights_on_server()>");
+
+        net_manager.update_by_gradients(request.body.gradients);
+    }
+    else {
+        console.log("<update_model_from_gradients> Received results from an old model_ID " + model_ID_from_client + ", discarding...");
+    }
+    response.send();
+});
+
 app.post('/reset_model', function(request, response){
 
     net_manager.reset_model();
@@ -193,7 +203,7 @@ app.post('/store_new_model_on_server', function(request, response){
 
 app.post('/store_validation_accuracy_on_server', function(request, response){
     if (net_manager.is_new_validation_accuracy_worse(request.body.validation_accuracy, request.body.epoch_num)
-            && request.body.epoch_num > net_manager.get_minimum_epochs_to_train()) {
+            && request.body.epoch_num > cifar10.minimum_epochs_to_train) {
         var res = {is_testing_needed: true};
         response.send(res);
         is_model_in_testing_mode = true;

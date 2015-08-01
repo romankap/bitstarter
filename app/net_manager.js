@@ -29,20 +29,7 @@ function update_epoch_end_time_and_duration() {
 	epoch_end_time = getTime();
 	time_to_train_epochs_array.push(epoch_end_time - epoch_start_time);
 }
-var reset_stats_func = function() {
-		fw_timings.length=0; fw_timings_sum=0;
-		bw_timings.length=0; bw_timings_sum=0;
-		latencies_to_server.length=0; latencies_to_server_sum=0;
-		latencies_from_server.length=0; latencies_from_server_sum=0;
-		time_to_train_epochs_array.length=0; epoch_start_time=getTime(); epoch_end_time=0;
-		validation_accuracies_array.length=0;
 
-    clients_dict = {};
-    total_different_clients=0;
-    last_contributing_client = "<no client>";
-
-		last_validation_accuracy=0; testing_accuracy=0;
-	};
 
 var gradients_calculator = {
     traverse: function (net_weight, gradient, property_name) {
@@ -95,6 +82,7 @@ var check_if_in_clients_dict = function(client_name) {
 
 var net;          // Most updated netowrk
 var dataset;      // Currently used datastet
+var trainer;
 
 var model_id;     // Identifier of running model
 var last_batch;
@@ -116,6 +104,9 @@ var validation_accuracies_array = new Array();
 var last_validation_accuracy=0, testing_accuracy=0;
 
 module.exports = {
+  update_by_gradients: function(grads) {
+      trainer.push_grads(JSON.parse(grads));
+  },
 
 	get_different_clients_num : function() {
 		return total_different_clients;
@@ -142,8 +133,16 @@ module.exports = {
     },
 
 	// Stats-related
-	reset_stats: reset_stats_func,
+	reset_stats: function() {
+		fw_timings.length=0; fw_timings_sum=0;
+		bw_timings.length=0; bw_timings_sum=0;
+		latencies_to_server.length=0; latencies_to_server_sum=0;
+		latencies_from_server.length=0; latencies_from_server_sum=0;
+		time_to_train_epochs_array.length=0; epoch_start_time=0; epoch_end_time=0;
+		validation_accuracies_array.length=0;
 
+		last_validation_accuracy=0; testing_accuracy=0;
+	},
 	get_fw_timings_average : function() {
 		if (fw_timings.length > 0)
 			return fw_timings_sum/fw_timings.length;
@@ -261,29 +260,20 @@ module.exports = {
             model_ID: model_id,
             dataset: dataset.name,
 
-      			total_training_batches: 		total_batches,
-      			samples_in_training_batch: 		batch_size,
+      			total_training_batches: 		dataset.train_batches,
+      			samples_in_training_batch: 		dataset.train_size,
       			samples_in_testing_batch: 		dataset.test_size,
       			samples_in_validation_batch: 	dataset.validation_size,
       			minimum_epochs_to_train: 		dataset.minimum_epochs_to_train,
         };
     },
 
-    get_minimum_epochs_to_train: function() {
-        return dataset.minimum_epochs_to_train
-    },
-
     get_batch_url: function(batch_num) {
-      return dataset.gen_batch_url(batch_num, batch_size);
+      return dataset.gen_batch_url(batch_num);
     },
 
     get_current_net_schem: function() {
         return network_schem;
-    },
-
-    set_batch_size: function(val) {
-        batch_size = val;
-        total_batches = dataset.train_batch_size / batch_size;
     },
 
     set_net: function(new_net) {
@@ -312,7 +302,7 @@ module.exports = {
     },
 
     gen_admin_batch_url: function() {
-      return dataset.admin_url(batch_size);
+      return dataset.admin_url;
     },
 
     update_model_from_gradients: function(model_from_client) {
@@ -327,9 +317,6 @@ module.exports = {
 	},
 
     request_batch_num: function (client) {
-      if(total_different_clients == 0 && last_batch == 0) {
-        epoch_start_time = getTime();
-      }
         var curr_batch = last_batch;
         console.log("<request_batch_num> sending batch_num " + curr_batch
             + " (out of " + total_batches + ") to node #" + client);
@@ -355,7 +342,7 @@ module.exports = {
 		last_batch = 0;
 		epochs_count = 0;
 
-    reset_stats_func();
+
 		eval(network_schem);
 		trainer_param = {
           learning_rate: trainer.learning_rate,
@@ -385,9 +372,8 @@ module.exports = {
 
         eval(network_schem);
         model_id = this.generate_new_model_ID();
-
+        total_batches = dataset.train_batches;
         batch_size = dataset.train_size;
-        total_batches = dataset.train_batch_size / batch_size;
         last_batch = 0;
 		    epochs_count = 0;
 
