@@ -192,6 +192,9 @@ var init_batch = function() {
           });
           $("#data_name").text(data.dataset_name.toUpperCase());
         }
+      //  if(trainer == undefined) {
+          trainer = new convnetjs.SGDTrainer(net, data.trainer_param);
+
 
         model_id  = data.model_ID;
 
