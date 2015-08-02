@@ -289,7 +289,7 @@ var train_on_batch = function() {
         step(sample, curr_sample_num); // process this image
         curr_sample_num++
 
-        if(curr_sample_num != 1 && (  curr_sample_num-1) % 80 == 0) {
+        if(curr_sample_num != 1 && (  curr_sample_num-1) % 250 == 0) {
             grads = trainer.accuredGrads;
             post_gradients(grads);
             trainer.accuredGrads = [];
