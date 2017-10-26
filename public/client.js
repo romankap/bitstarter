@@ -83,10 +83,10 @@ var load_data_batch = function(batch_to_load) {
         console.log('finished loading data batch ' + batch_to_load);
     }
     if (isNumeric(batch_to_load))
-        data_img_elt.src = "http://tx.technion.ac.il/~sromanka/cifar10/" +  samples_in_training_batch
+        data_img_elt.src = "https://github.com/romankap/romankap.github.io/blob/master/misc/cifar10/" +  samples_in_training_batch
                             + "/cifar10_batch_" + batch_to_load + ".png";
     else //Either validation or testing batch
-        data_img_elt.src = "http://tx.technion.ac.il/~sromanka/cifar10/" + samples_in_training_batch
+        data_img_elt.src = "https://github.com/romankap/romankap.github.io/blob/master/misc/cifar10/" + samples_in_training_batch
                             + "/cifar10_admin.png";
 }
 
